@@ -1,4 +1,4 @@
-import { userMessage } from './errors';
+import { setErrorReporter, userMessage } from './errors';
 
 describe('userMessage', () => {
   beforeEach(() => {
@@ -44,5 +44,47 @@ describe('userMessage', () => {
     const e = { code: '42501', message: 'nope', details: null, hint: null };
     userMessage(e, 'Fallback.', 'joinEvent');
     expect(spy).toHaveBeenCalledWith('[joinEvent]', e);
+  });
+});
+
+describe('error reporting hook', () => {
+  beforeEach(() => {
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    setErrorReporter(null);
+    jest.restoreAllMocks();
+  });
+
+  it('reports the tag, code, and message of a handled error', () => {
+    const seen: unknown[] = [];
+    setErrorReporter((r) => seen.push(r));
+    const e = { code: '42501', message: 'rls denied', details: null, hint: null };
+    userMessage(e, 'Fallback.', 'joinEvent');
+    expect(seen).toEqual([{ tag: 'joinEvent', code: '42501', message: 'rls denied' }]);
+  });
+
+  it('reports P0001 errors too', () => {
+    const seen: unknown[] = [];
+    setErrorReporter((r) => seen.push(r));
+    userMessage({ code: 'P0001', message: 'Verify your email' }, 'Fallback.', 'joinEvent');
+    expect(seen).toEqual([{ tag: 'joinEvent', code: 'P0001', message: 'Verify your email' }]);
+  });
+
+  it('still returns the right text when a reporter throws', () => {
+    setErrorReporter(() => {
+      throw new Error('reporter exploded');
+    });
+    expect(userMessage({ code: 'P0001', message: 'Verify your email' }, 'Fallback.')).toBe(
+      'Verify your email',
+    );
+  });
+
+  it('does not report once the reporter is cleared', () => {
+    const seen: unknown[] = [];
+    setErrorReporter((r) => seen.push(r));
+    setErrorReporter(null);
+    userMessage({ code: '42501', message: 'nope' }, 'Fallback.');
+    expect(seen).toEqual([]);
   });
 });

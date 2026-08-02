@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,6 +14,8 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 import * as ImagePicker from 'expo-image-picker';
 
 import { setHandle } from '@/data/friends';
@@ -32,10 +35,13 @@ const SETTINGS: Row[] = [
   { icon: 'help-circle-outline', label: 'Help & feedback' },
 ];
 
-const SETTING_ROUTES: Record<string, '/legal' | '/blocked'> = {
+const SETTING_ROUTES: Record<string, '/legal' | '/blocked' | '/notifications'> = {
   'Privacy & Terms': '/legal',
   'Blocked users': '/blocked',
+  Notifications: '/notifications',
 };
+
+const SUPPORT_EMAIL = 'dax0068@gmail.com';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -77,6 +83,30 @@ export default function ProfileScreen() {
         },
       ],
     );
+  }
+
+  async function openSupportEmail() {
+    const context = [
+      '',
+      '',
+      '---',
+      `Handle: @${profile?.handle ?? 'unknown'}`,
+      `App: ${Constants.expoConfig?.version ?? 'unknown'}`,
+      `Device: ${Device.modelName ?? 'unknown'} (${Device.osName ?? '?'} ${Device.osVersion ?? '?'})`,
+    ].join('\n');
+    const url = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+      'HangoutAI feedback',
+    )}&body=${encodeURIComponent(context)}`;
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        toast.info(`Email us at ${SUPPORT_EMAIL}`);
+        return;
+      }
+      await Linking.openURL(url);
+    } catch (e) {
+      toast.error(userMessage(e, `Email us at ${SUPPORT_EMAIL}`, 'openSupportEmail'));
+    }
   }
 
   async function saveHandle() {
@@ -312,6 +342,10 @@ export default function ProfileScreen() {
           <Pressable
             key={row.label}
             onPress={() => {
+              if (row.label === 'Help & feedback') {
+                openSupportEmail();
+                return;
+              }
               const route = SETTING_ROUTES[row.label];
               if (route) router.push(route);
             }}
