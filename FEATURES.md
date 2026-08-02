@@ -2,7 +2,7 @@
 
 A living record of what the app currently does. **Update this file whenever functionality is added, changed, or removed.**
 
-_Last updated: 2026-07-29 (error feedback polish)_
+_Last updated: 2026-08-03 (client error reporting)_
 
 ## Overview
 
@@ -27,7 +27,8 @@ Four bottom tabs: **Discover**, **Create**, **Friends**, **You**.
 
 ## Legal & distribution
 
-- **Privacy Policy + Terms** — in-app `/legal` screen (linked from You → "Privacy & Terms"). Template text; bracketed fields (`[DATE]`, `[ENTITY]`, `[CONTACT EMAIL]`, `[JURISDICTION]`) must be filled/reviewed before launch.
+- **Privacy Policy + Terms** — in-app `/legal` screen (linked from You → "Privacy & Terms"). Template text; bracketed fields (`[DATE]`, `[CONTACT EMAIL]`, `[JURISDICTION]`) must be filled/reviewed before launch. Google Play also requires the policy at a **public URL**, which is not yet hosted.
+- **Support** — You → "Help & feedback" opens a pre-addressed email with the user's handle, app version, and device attached. You → "Notifications" explains that push is not shipped yet. "Location & privacy" is still an inert row.
 - **EAS build config** — `eas.json` with `development` (dev client, for push testing), `preview` (internal APK), and `production` (Play app-bundle) profiles; `app.json` has Android package `com.hangoutai.app`. Actual builds require an Expo account (`npx eas build --profile <name> --platform android`).
 
 ## Onboarding
@@ -70,6 +71,7 @@ Four bottom tabs: **Discover**, **Create**, **Friends**, **You**.
 - **Manage blocked users** — a **Blocked users** screen (`/blocked`, linked from the You tab) lists everyone you've blocked and lets you unblock them.
 - **Report** an event or user (canned reasons) from the event menu.
 - **Admin** (profiles with `is_admin`) — a **Reports** screen (`/admin`, linked from the You tab) to remove an event, ban a user, or dismiss a report.
+- **Diagnostics** — handled and unhandled client errors are logged to `client_errors` (account id, device model, OS version, error detail), readable only by admins and auto-deleted after 30 days. The `error-alert` Edge Function emails crashes immediately and a daily digest of everything else. Disclosed in the in-app privacy policy.
 
 ## Not yet implemented (roadmap)
 
@@ -101,6 +103,7 @@ Migrations live in `supabase/migrations/` and are applied by pasting them into t
 - `0016_notification_outbox` — durable notification queue + enqueue triggers (friend request/accept, invite, message).
 - `0017_event_visibility` — public/friends/private visibility, `can_access_event` + access-based RLS, visibility on reads and create/edit.
 - `0018_event_access_row` — `can_access_event_row(host_id, visibility, id)`; the events SELECT policy now decides from the row's own columns (the by-id lookup broke `INSERT ... RETURNING` in `create_event`).
+- `0019_client_errors` — client-side error log (insert-only for users, admin-only reads, 30-day retention) plus the `error_digest()` summary RPC.
 
 **Setup notes:** custom SMTP is required for verification emails (see the root `README.md`); set `is_admin = true` on your own profile to access the admin Reports screen.
 
