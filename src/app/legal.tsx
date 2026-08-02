@@ -32,6 +32,8 @@ export default function LegalScreen() {
       <P>Data is stored with our backend provider, Supabase. Other users see what you choose to share: your handle, events, messages in events you join, and — depending on your per-event setting — an exact or approximate event location.</P>
       <H>Location</H>
       <P>Events you post as &quot;approximate&quot; are shown to non-members at a fuzzed location; the exact spot is shared only with the host, accepted friends, and people who join.</P>
+      <H>Diagnostics</H>
+      <P>When something goes wrong in the app we record the error, the screen it happened on, your account id, your device model, and your operating system version. We use this only to find and fix faults. These records are deleted automatically after 30 days.</P>
       <H>Retention &amp; deletion</H>
       <P>You can delete your account at any time from the You tab, which permanently removes your profile, events, messages, and relationships. Expired events are cleaned up automatically.</P>
       <H>Children</H>

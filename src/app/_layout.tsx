@@ -10,6 +10,9 @@ import { Onboarding } from '@/components/Onboarding';
 import { ToastHost } from '@/components/Toast';
 import { AuthProvider } from '@/lib/auth';
 import { useOnboarding } from '@/lib/onboarding';
+import { installErrorReporting } from '@/lib/telemetry';
+
+installErrorReporting();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
