@@ -26,6 +26,7 @@ mkdir -p "D:/Android/tmp"
 export TEMP="D:/Android/tmp"
 export TMP="D:/Android/tmp"
 export TMPDIR="D:/Android/tmp"
+export GRADLE_USER_HOME="D:/_HangoutAI-build/gradle"
 
 # 1) Emulator ---------------------------------------------------------------
 if "$ADB" devices | grep -q "emulator-.*device"; then
