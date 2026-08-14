@@ -69,6 +69,35 @@ export async function fetchMyEvents(): Promise<HangoutEvent[]> {
   return (data as NearbyRow[]).map(rowToHangoutEvent);
 }
 
+export async function getEventByLink(id: string, token: string): Promise<HangoutEvent | null> {
+  const { data, error } = await supabase.rpc('get_event_by_link', {
+    p_event_id: id,
+    p_token: token,
+  });
+  if (error) throw error;
+  const rows = data as NearbyRow[];
+  return rows.length ? rowToHangoutEvent(rows[0]) : null;
+}
+
+export async function joinEventByLink(id: string, token: string): Promise<void> {
+  const { error } = await supabase.rpc('join_event_by_link', {
+    p_event_id: id,
+    p_token: token,
+  });
+  if (error) throw error;
+}
+
+export async function enableEventLink(id: string): Promise<string> {
+  const { data, error } = await supabase.rpc('enable_event_link', { p_event_id: id });
+  if (error) throw error;
+  return data as string;
+}
+
+export async function disableEventLink(id: string): Promise<void> {
+  const { error } = await supabase.rpc('disable_event_link', { p_event_id: id });
+  if (error) throw error;
+}
+
 export type UpdateEventInput = CreateEventInput;
 
 export async function getEvent(id: string): Promise<HangoutEvent | null> {
