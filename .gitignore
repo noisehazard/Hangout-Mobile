@@ -48,6 +48,13 @@ example
 .env.example
 Supabase Password.txt
 
+.env.eas
+
+# Firebase / FCM
+google-services.json
+*-firebase-adminsdk-*.json
+service-account*.json
+
 # Local working notes and agent config
 docs/
 .claude/
