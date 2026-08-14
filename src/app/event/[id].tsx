@@ -7,6 +7,7 @@ import {
   Image,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
@@ -17,7 +18,18 @@ import { EventChat } from '@/components/EventChat';
 import { LeafletMap } from '@/components/LeafletMap';
 import { WhoIsGoing } from '@/components/WhoIsGoing';
 import { EventAttendee } from '@/data/attendeeMappers';
-import { deleteEvent, fetchAttendees, getEvent, joinEvent, leaveEvent } from '@/data/events';
+import {
+  deleteEvent,
+  disableEventLink,
+  enableEventLink,
+  fetchAttendees,
+  getEvent,
+  getEventByLink,
+  joinEvent,
+  joinEventByLink,
+  leaveEvent,
+} from '@/data/events';
+import { eventShareMessage, eventShareUrl } from '@/lib/links';
 import { blockUser, submitReport } from '@/data/safety';
 import { useAuth } from '@/lib/auth';
 import { userMessage } from '@/lib/errors';
@@ -37,7 +49,7 @@ function formatTime(iso: string): string {
 }
 
 export default function EventDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, k } = useLocalSearchParams<{ id: string; k?: string }>();
   const { session, profile } = useAuth();
   const insets = useSafeAreaInsets();
 
@@ -45,18 +57,26 @@ export default function EventDetailScreen() {
   const [attendees, setAttendees] = useState<EventAttendee[]>([]);
   const [joining, setJoining] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [viaLink, setViaLink] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
     try {
-      const [ev, att] = await Promise.all([getEvent(id), fetchAttendees(id)]);
+      let ev = await getEvent(id);
+      let byLink = false;
+      if (!ev && k) {
+        ev = await getEventByLink(id, k);
+        byLink = ev !== null;
+      }
+      setViaLink(byLink);
+      const att = ev ? await fetchAttendees(id) : [];
       setEvent(ev);
       setAttendees(att);
     } catch (e) {
       console.warn('Failed to load event', e);
       setEvent(null);
     }
-  }, [id]);
+  }, [id, k]);
 
   useEffect(() => {
     load();
@@ -70,9 +90,12 @@ export default function EventDetailScreen() {
     }
     setJoining(true);
     try {
-      await joinEvent(id);
-      const att = await fetchAttendees(id);
-      setAttendees(att);
+      if (viaLink && k) {
+        await joinEventByLink(id, k);
+      } else {
+        await joinEvent(id);
+      }
+      await load();
     } catch (e) {
       toast.error(userMessage(e, "Couldn't join that hangout.", 'joinEvent'));
     } finally {
@@ -152,12 +175,51 @@ export default function EventDetailScreen() {
     ]);
   }
 
+  async function handleShare() {
+    if (!id || !event) return;
+    try {
+      let token: string | null = null;
+      if (event.visibility !== 'public') {
+        const ok = await new Promise<boolean>((resolve) => {
+          Alert.alert(
+            'Share this hangout?',
+            'Anyone with the link will be able to see it and join, even if they aren\'t your friend. You can stop sharing at any time.',
+            [
+              { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Share', onPress: () => resolve(true) },
+            ],
+          );
+        });
+        if (!ok) return;
+        token = await enableEventLink(id);
+      }
+      await Share.share({
+        message: eventShareMessage(event.title, eventShareUrl(id, token)),
+      });
+    } catch (e) {
+      toast.error(userMessage(e, "Couldn't share that hangout.", 'shareEvent'));
+    }
+  }
+
+  async function stopLinkSharing() {
+    if (!id) return;
+    try {
+      await disableEventLink(id);
+      toast.success('Link sharing stopped.');
+    } catch (e) {
+      toast.error(userMessage(e, "Couldn't stop link sharing.", 'disableEventLink'));
+    }
+  }
+
   function openMenu() {
     const options: { text: string; onPress?: () => void; style?: 'cancel' | 'destructive' }[] = [
       { text: 'Report hangout', onPress: reportEvent },
     ];
     if (session?.user.id !== event?.hostId) {
       options.push({ text: 'Block host', onPress: blockHost });
+    }
+    if (session?.user.id === event?.hostId && event?.visibility !== 'public') {
+      options.push({ text: 'Stop link sharing', onPress: stopLinkSharing });
     }
     options.push({ text: 'Cancel', style: 'cancel' });
     Alert.alert('Options', undefined, options);
@@ -199,9 +261,14 @@ export default function EventDetailScreen() {
           <Pressable style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={26} color={Colors.text} />
           </Pressable>
-          <Pressable style={styles.backButton} onPress={openMenu}>
-            <Ionicons name="ellipsis-horizontal" size={22} color={Colors.text} />
-          </Pressable>
+          <View style={styles.topBarActions}>
+            <Pressable style={styles.backButton} onPress={handleShare}>
+              <Ionicons name="share-outline" size={22} color={Colors.text} />
+            </Pressable>
+            <Pressable style={styles.backButton} onPress={openMenu}>
+              <Ionicons name="ellipsis-horizontal" size={22} color={Colors.text} />
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.body}>
@@ -343,6 +410,10 @@ const styles = StyleSheet.create({
     right: Spacing.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  topBarActions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
   },
   backButton: {
     width: 40,
