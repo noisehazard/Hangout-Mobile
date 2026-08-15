@@ -87,6 +87,15 @@ export async function joinEventByLink(id: string, token: string): Promise<void> 
   if (error) throw error;
 }
 
+export async function duplicateEvent(id: string, startsAt: string): Promise<string> {
+  const { data, error } = await supabase.rpc('duplicate_event', {
+    p_event_id: id,
+    p_starts_at: startsAt,
+  });
+  if (error) throw error;
+  return data as string;
+}
+
 export async function enableEventLink(id: string): Promise<string> {
   const { data, error } = await supabase.rpc('enable_event_link', { p_event_id: id });
   if (error) throw error;

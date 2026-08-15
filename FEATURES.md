@@ -2,7 +2,7 @@
 
 A living record of what the app currently does. **Update this file whenever functionality is added, changed, or removed.**
 
-_Last updated: 2026-08-16 (event share links, Google sign-in)_
+_Last updated: 2026-08-16 (metrics, rate limits, repeat hangout)_
 
 ## Overview
 
@@ -47,6 +47,7 @@ Four bottom tabs: **Discover**, **Create**, **Friends**, **You**.
 
 ## Events
 
+- **Repeat a hangout** — the host's options menu offers "Repeat this hangout" (tomorrow / next week, same time), re-posting the same place and details with the original duration preserved. Past start times are never offered.
 - **Create / edit / delete** (host only) with title, description, optional photo, theme/vibe, start time, and an end time / TTL (auto-cleaned hourly).
 - **Location picker** with place search + reverse geocoding; drag-to-move pin.
 - **Per-event location privacy** — host chooses **Exact** or **Approximate** (default Approximate). Approximate events show a **deterministic fuzzed point** (~±330 m) and an area circle + note to non-members; the true spot is revealed to the host, accepted friends, and anyone who has joined.
@@ -73,6 +74,8 @@ Four bottom tabs: **Discover**, **Create**, **Friends**, **You**.
 - **Manage blocked users** — a **Blocked users** screen (`/blocked`, linked from the You tab) lists everyone you've blocked and lets you unblock them.
 - **Report** an event or user (canned reasons) from the event menu.
 - **Admin** (profiles with `is_admin`) — a **Reports** screen (`/admin`, linked from the You tab) to remove an event, ban a user, or dismiss a report.
+- **Soft-launch metrics** — the `/admin` screen leads with the five metrics from the supply plan (live hangouts per day, share of app opens with something in radius, hosts other than you in 14 days, repeat attendance, joins per hangout), each against its target and coloured green/red. A dash means no data yet, which is deliberately distinct from zero. The `metrics-digest` Edge Function emails the same numbers weekly; it counts non-admin hosts, since a service-role call has no `auth.uid()`.
+- **Rate limits** — `check_rate_limit` caps event creation at 10/hour and joins at 40/hour per account, raising a user-facing message. Helpers exist for messages, friend requests and reports.
 - **Diagnostics** — handled and unhandled client errors are logged to `client_errors` (account id, device model, OS version, error detail), readable only by admins and auto-deleted after 30 days. The `error-alert` Edge Function emails crashes immediately and a daily digest of everything else. Disclosed in the in-app privacy policy.
 
 ## Not yet implemented (roadmap)
@@ -107,6 +110,8 @@ Migrations live in `supabase/migrations/` and are applied by pasting them into t
 - `0017_event_visibility` — public/friends/private visibility, `can_access_event` + access-based RLS, visibility on reads and create/edit.
 - `0018_event_access_row` — `can_access_event_row(host_id, visibility, id)`; the events SELECT policy now decides from the row's own columns (the by-id lookup broke `INSERT ... RETURNING` in `create_event`).
 - `0019_client_errors` — client-side error log (insert-only for users, admin-only reads, 30-day retention) plus the `error_digest()` summary RPC.
+- `0021_metrics` — `app_opens` (insert-own, admin-read) + `record_app_open`, `soft_launch_metrics()` for the in-app admin panel and `admin_metrics_for_digest()` for the service-role weekly email.
+- `0022_rate_limits` — `check_rate_limit(action, max, window)` wired into `create_event` (10/h) and `join_event` (40/h), an end-after-start guard on create, and `duplicate_event(id, starts_at)` which re-posts your own hangout preserving its duration.
 - `0020_event_link_access` — `events.link_token` plus `enable_event_link` / `disable_event_link` (host-only) and the `security definer` pair `get_event_by_link` / `join_event_by_link`. Both are revoked from `public` and re-granted to `authenticated` — Postgres grants EXECUTE to PUBLIC by default, so revoking from `anon` alone leaves them open.
 
 **Setup notes:** custom SMTP is required for verification emails (see the root `README.md`); set `is_admin = true` on your own profile to access the admin Reports screen.

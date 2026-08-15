@@ -21,6 +21,7 @@ import { EventAttendee } from '@/data/attendeeMappers';
 import {
   deleteEvent,
   disableEventLink,
+  duplicateEvent,
   enableEventLink,
   fetchAttendees,
   getEvent,
@@ -30,6 +31,7 @@ import {
   leaveEvent,
 } from '@/data/events';
 import { eventShareMessage, eventShareUrl } from '@/lib/links';
+import { repeatOptions } from '@/lib/repeat';
 import { blockUser, submitReport } from '@/data/safety';
 import { useAuth } from '@/lib/auth';
 import { userMessage } from '@/lib/errors';
@@ -201,6 +203,26 @@ export default function EventDetailScreen() {
     }
   }
 
+  function repeatEvent() {
+    if (!id || !event) return;
+    const options = repeatOptions(new Date(event.startTime)).map((o) => ({
+      text: o.label,
+      onPress: async () => {
+        try {
+          const newId = await duplicateEvent(id, o.startsAt.toISOString());
+          toast.success('Posted again 🎉');
+          router.replace({ pathname: '/event/[id]', params: { id: newId } });
+        } catch (e) {
+          toast.error(userMessage(e, "Couldn't repeat that hangout.", 'duplicateEvent'));
+        }
+      },
+    }));
+    Alert.alert('Repeat this hangout', 'Same place, same details, new time.', [
+      ...options,
+      { text: 'Cancel', style: 'cancel' as const },
+    ]);
+  }
+
   async function stopLinkSharing() {
     if (!id) return;
     try {
@@ -218,8 +240,11 @@ export default function EventDetailScreen() {
     if (session?.user.id !== event?.hostId) {
       options.push({ text: 'Block host', onPress: blockHost });
     }
-    if (session?.user.id === event?.hostId && event?.visibility !== 'public') {
-      options.push({ text: 'Stop link sharing', onPress: stopLinkSharing });
+    if (session?.user.id === event?.hostId) {
+      options.push({ text: 'Repeat this hangout', onPress: repeatEvent });
+      if (event?.visibility !== 'public') {
+        options.push({ text: 'Stop link sharing', onPress: stopLinkSharing });
+      }
     }
     options.push({ text: 'Cancel', style: 'cancel' });
     Alert.alert('Options', undefined, options);
