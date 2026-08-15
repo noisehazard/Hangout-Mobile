@@ -2,7 +2,7 @@
 
 A living record of what the app currently does. **Update this file whenever functionality is added, changed, or removed.**
 
-_Last updated: 2026-08-03 (client error reporting)_
+_Last updated: 2026-08-16 (event share links, Google sign-in)_
 
 ## Overview
 
@@ -18,7 +18,8 @@ Four bottom tabs: **Discover**, **Create**, **Friends**, **You**.
 ## Identity & accounts
 
 - **Anonymous by default** — a session is created on first open; the app never sits signed-out.
-- **Email upgrade** — anonymous users can attach an email and confirm a **6-digit OTP** to become *verified*, preserving the same account/profile (`You` tab). Requires custom SMTP configured in Supabase.
+- **Email upgrade** — anonymous users can attach an email and confirm a **6-digit OTP** to become *verified*, preserving the same account/profile (`You` tab). Requires custom SMTP configured in Supabase, and the `{{ .Token }}` variable in the *Change Email Address* template — without it the mail carries only a link and the in-app code entry has nothing to match.
+- **Google sign-in** — "Continue with Google" on the You tab links a Google identity to the **existing anonymous account** via `linkIdentity`, so the handle, hosted events and friendships survive. Google supplies a pre-confirmed email, which trips the verification trigger and sets `verified` with no email delivery involved. Needs Supabase *manual linking* enabled, and an Android OAuth client per signing key — the debug and EAS release keystores have different SHA-1s, and a missing one fails with `DEVELOPER_ERROR` (code 10). Hidden in Expo Go, which cannot load the native module.
 - **Verified-to-act gating** — anyone can browse; **creating or joining** an event requires a verified account, enforced server-side and prompted in the UI.
 - **Handles** — every profile has a unique, case-insensitive handle; editable on the You tab and during onboarding.
 - **Profile photo** — set, replace, or remove an avatar from the You tab (square-cropped, stored in a per-user `avatars` bucket). Avatars appear in the friends list, attendee lists, and blocked-users screen.
@@ -50,7 +51,8 @@ Four bottom tabs: **Discover**, **Create**, **Friends**, **You**.
 - **Location picker** with place search + reverse geocoding; drag-to-move pin.
 - **Per-event location privacy** — host chooses **Exact** or **Approximate** (default Approximate). Approximate events show a **deterministic fuzzed point** (~±330 m) and an area circle + note to non-members; the true spot is revealed to the host, accepted friends, and anyone who has joined.
 - **Visibility** — each hangout is **Public** (on the map for everyone), **Friends only** (on the map only for the host's friends), or **Invite only** (off the map; only the host and invited friends can see or join). Enforced server-side via `can_access_event`.
-- **Event detail** — map, description, host, time, theme, openness, friends-going count, who's-going, chat, join, and (host) edit/delete.
+- **Event detail** — map, description, host, time, theme, openness, friends-going count, who's-going, chat, share, join, and (host) edit/delete.
+- **Share links** — a Share button on event detail sends `https://hangoutai.app/e/<id>` (plus a `?k=` token for non-public events), which deep-links into the app via the `hangoutai://` scheme. The token is a **doorknob**: two `security definer` RPCs check it once at the door, and after joining the caller is an ordinary attendee, so `can_access_event` and every RLS policy are untouched. Blocks, bans, expiry, the verified-to-join gate and location fuzzing all still apply to a link holder. The host mints a token on first share (confirmed for friends/private events) and can revoke it from the options menu, which rotates it and kills every link already sent. The `https` redirect site is not hosted yet, so links currently resolve only for people who already have the app.
 - **Join** ("I'm in") — verified users; **Who's going** attendee list is shown to verified users only (everyone sees the count).
 
 ## Friends
@@ -75,6 +77,7 @@ Four bottom tabs: **Discover**, **Create**, **Friends**, **You**.
 
 ## Not yet implemented (roadmap)
 
+- **Google sign-in release keys** — each signing key needs its own Android OAuth client in Google Cloud (debug + EAS release are different). Google config changes take minutes to propagate.
 - **Push notifications** (WS6) — DB foundation ✅ (`push_tokens` + `notification_outbox` + enqueue triggers) and send path ✅ (`send-push` Edge Function drains the outbox to the Expo Push API, prunes dead tokens). Remaining: deploy the function + wire the Database Webhook, and client registration/receive via `expo-notifications` (slice 3, needs `eas init` projectId + a dev build).
 - **Polish pass** (WS7) — error feedback and failure states ✅ (toasts, server-authored
   messages, Discover empty/error states). Remaining: a visual pass after real-device testing.
@@ -104,6 +107,7 @@ Migrations live in `supabase/migrations/` and are applied by pasting them into t
 - `0017_event_visibility` — public/friends/private visibility, `can_access_event` + access-based RLS, visibility on reads and create/edit.
 - `0018_event_access_row` — `can_access_event_row(host_id, visibility, id)`; the events SELECT policy now decides from the row's own columns (the by-id lookup broke `INSERT ... RETURNING` in `create_event`).
 - `0019_client_errors` — client-side error log (insert-only for users, admin-only reads, 30-day retention) plus the `error_digest()` summary RPC.
+- `0020_event_link_access` — `events.link_token` plus `enable_event_link` / `disable_event_link` (host-only) and the `security definer` pair `get_event_by_link` / `join_event_by_link`. Both are revoked from `public` and re-granted to `authenticated` — Postgres grants EXECUTE to PUBLIC by default, so revoking from `anon` alone leaves them open.
 
 **Setup notes:** custom SMTP is required for verification emails (see the root `README.md`); set `is_admin = true` on your own profile to access the admin Reports screen.
 

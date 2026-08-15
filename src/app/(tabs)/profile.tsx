@@ -20,7 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { setHandle } from '@/data/friends';
 import { removeAvatar, uploadAvatar } from '@/lib/storage';
-import { useAuth } from '@/lib/auth';
+import { googleSignInAvailable, useAuth } from '@/lib/auth';
 import { userMessage } from '@/lib/errors';
 import { toast } from '@/lib/toast';
 import { Colors, Spacing } from '@/theme';
@@ -290,15 +290,19 @@ export default function ProfileScreen() {
               <Text style={styles.signInText}>Save my account</Text>
             </Pressable>
 
-            <Text style={styles.orDivider}>or</Text>
+            {googleSignInAvailable && (
+              <>
+                <Text style={styles.orDivider}>or</Text>
 
-            <Pressable
-              style={({ pressed }) => [styles.googleButton, pressed && styles.pressed]}
-              onPress={startGoogle}
-            >
-              <Ionicons name="logo-google" size={18} color={Colors.text} />
-              <Text style={styles.googleText}>Continue with Google</Text>
-            </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.googleButton, pressed && styles.pressed]}
+                  onPress={startGoogle}
+                >
+                  <Ionicons name="logo-google" size={18} color={Colors.text} />
+                  <Text style={styles.googleText}>Continue with Google</Text>
+                </Pressable>
+              </>
+            )}
           </View>
         )}
 
