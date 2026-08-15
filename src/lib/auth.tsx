@@ -1,4 +1,4 @@
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Session } from '@supabase/supabase-js';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
@@ -6,6 +6,14 @@ import { supabase } from '@/lib/supabase';
 
 const GOOGLE_WEB_CLIENT_ID =
   '447719789441-l0humk1f08a88jvv2plejt46o2ulvtvt.apps.googleusercontent.com';
+
+export const googleSignInAvailable =
+  Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
+
+function loadGoogleSignin() {
+  return require('@react-native-google-signin/google-signin')
+    .GoogleSignin as typeof import('@react-native-google-signin/google-signin').GoogleSignin;
+}
 
 export type Profile = {
   id: string;
@@ -122,6 +130,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await loadProfile(session, setProfile);
     },
     linkGoogle: async () => {
+      if (!googleSignInAvailable) {
+        throw new Error('Google sign-in needs the installed app, not Expo Go.');
+      }
+      const GoogleSignin = loadGoogleSignin();
       GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const result = await GoogleSignin.signIn();
