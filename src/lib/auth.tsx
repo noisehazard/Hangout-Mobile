@@ -1,7 +1,11 @@
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { Session } from '@supabase/supabase-js';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 import { supabase } from '@/lib/supabase';
+
+const GOOGLE_WEB_CLIENT_ID =
+  '447719789441-l0humk1f08a88jvv2plejt46o2ulvtvt.apps.googleusercontent.com';
 
 export type Profile = {
   id: string;
@@ -18,6 +22,7 @@ type AuthValue = {
   loading: boolean;
   linkEmail: (email: string) => Promise<void>;
   verifyEmailOtp: (email: string, token: string) => Promise<void>;
+  linkGoogle: () => Promise<void>;
   updateHandle: (handle: string) => Promise<void>;
   updateAvatar: (url: string | null) => Promise<void>;
   signOut: () => Promise<void>;
@@ -113,6 +118,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     verifyEmailOtp: async (email, token) => {
       const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email_change' });
+      if (error) throw error;
+      await loadProfile(session, setProfile);
+    },
+    linkGoogle: async () => {
+      GoogleSignin.configure({ webClientId: GOOGLE_WEB_CLIENT_ID });
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const result = await GoogleSignin.signIn();
+      const idToken = result.data?.idToken;
+      if (!idToken) throw new Error('Google sign-in was cancelled.');
+      const { error } = await supabase.auth.linkIdentity({ provider: 'google', token: idToken });
       if (error) throw error;
       await loadProfile(session, setProfile);
     },

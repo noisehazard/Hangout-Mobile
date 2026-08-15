@@ -45,8 +45,16 @@ const SUPPORT_EMAIL = 'dax0068@gmail.com';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { profile, loading, linkEmail, verifyEmailOtp, refreshProfile, deleteAccount, updateAvatar } =
-    useAuth();
+  const {
+    profile,
+    loading,
+    linkEmail,
+    verifyEmailOtp,
+    linkGoogle,
+    refreshProfile,
+    deleteAccount,
+    updateAvatar,
+  } = useAuth();
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [stage, setStage] = useState<'idle' | 'code' | 'busy'>('idle');
@@ -132,6 +140,21 @@ export default function ProfileScreen() {
       setStage('code');
     } catch (e) {
       toast.error(userMessage(e, "Couldn't send the code. Check the email and try again.", 'linkEmail'));
+      setStage('idle');
+    }
+  }
+
+  async function startGoogle() {
+    setStage('busy');
+    try {
+      await linkGoogle();
+      toast.success('Account saved 🎉 You can now create and join hangouts.');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '';
+      if (!msg.includes('cancelled') && !msg.includes('CANCELED')) {
+        toast.error(userMessage(e, "Couldn't sign in with Google.", 'linkGoogle'));
+      }
+    } finally {
       setStage('idle');
     }
   }
@@ -265,6 +288,16 @@ export default function ProfileScreen() {
               disabled={!email.trim()}
             >
               <Text style={styles.signInText}>Save my account</Text>
+            </Pressable>
+
+            <Text style={styles.orDivider}>or</Text>
+
+            <Pressable
+              style={({ pressed }) => [styles.googleButton, pressed && styles.pressed]}
+              onPress={startGoogle}
+            >
+              <Ionicons name="logo-google" size={18} color={Colors.text} />
+              <Text style={styles.googleText}>Continue with Google</Text>
             </Pressable>
           </View>
         )}
@@ -465,6 +498,28 @@ const styles = StyleSheet.create({
     borderColor: Colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  orDivider: {
+    textAlign: 'center',
+    color: Colors.textMuted,
+    fontSize: 13,
+    marginVertical: Spacing.xs,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  googleText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.text,
   },
   signInText: { color: Colors.accent, fontSize: 15, fontWeight: '700' },
   handleSection: {
