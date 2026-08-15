@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { MetricsPanel } from '@/components/MetricsPanel';
+import { fetchMetrics, SoftLaunchMetrics } from '@/data/metrics';
 import { AdminReport, adminBanUser, adminRemoveEvent, listReports, resolveReport } from '@/data/safety';
 import { userMessage } from '@/lib/errors';
 import { toast } from '@/lib/toast';
@@ -12,6 +14,7 @@ import { Colors, Spacing } from '@/theme';
 export default function AdminScreen() {
   const insets = useSafeAreaInsets();
   const [reports, setReports] = useState<AdminReport[]>([]);
+  const [metrics, setMetrics] = useState<SoftLaunchMetrics | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -21,6 +24,11 @@ export default function AdminScreen() {
       toast.error(userMessage(e, "Couldn't load reports.", 'listReports'));
     } finally {
       setLoading(false);
+    }
+    try {
+      setMetrics(await fetchMetrics());
+    } catch (e) {
+      toast.error(userMessage(e, "Couldn't load metrics.", 'softLaunchMetrics'));
     }
   }, []);
 
@@ -43,7 +51,14 @@ export default function AdminScreen() {
       <Pressable style={styles.back} onPress={() => router.back()}>
         <Ionicons name="chevron-back" size={26} color={Colors.text} />
       </Pressable>
-      <Text style={styles.title}>Reports</Text>
+      <Text style={styles.title}>Soft launch</Text>
+      {metrics ? (
+        <MetricsPanel metrics={metrics} />
+      ) : (
+        <Text style={styles.metricsEmpty}>Metrics unavailable.</Text>
+      )}
+
+      <Text style={[styles.title, styles.sectionGap]}>Reports</Text>
 
       {loading ? (
         <ActivityIndicator color={Colors.accent} style={{ marginTop: Spacing.xl }} />
@@ -83,6 +98,8 @@ const styles = StyleSheet.create({
   back: { width: 40, height: 40, alignItems: 'flex-start', justifyContent: 'center' },
   title: { fontSize: 26, fontWeight: '800', color: Colors.text, marginBottom: Spacing.md },
   empty: { fontSize: 14, color: Colors.textMuted, marginTop: Spacing.lg },
+  metricsEmpty: { fontSize: 14, color: Colors.textMuted },
+  sectionGap: { marginTop: Spacing.xl },
   card: {
     borderWidth: 1, borderColor: Colors.border, borderRadius: 14,
     padding: Spacing.md, marginBottom: Spacing.md, gap: 4,

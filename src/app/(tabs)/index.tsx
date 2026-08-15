@@ -11,6 +11,7 @@ import { LeafletMap, ProjectedPoint } from '@/components/LeafletMap';
 import { MapIntro } from '@/components/MapIntro';
 import { DEV_EVENTS } from '@/data/devEvents';
 import { fetchNearbyEvents, joinEvent } from '@/data/events';
+import { recordAppOpen } from '@/data/metrics';
 import { filterEventsByVibe, VIBES } from '@/data/vibes';
 import { userMessage } from '@/lib/errors';
 import { needsVerification, promptToVerify } from '@/lib/gating';
@@ -23,6 +24,7 @@ import { Colors } from '@/theme';
 type Region = { latitude: number; longitude: number; latitudeDelta: number };
 
 let introPlayed = false;
+let openRecorded = false;
 
 function Discover({ region, usingFallback }: { region: Region; usingFallback: boolean }) {
   const insets = useSafeAreaInsets();
@@ -79,6 +81,10 @@ function Discover({ region, usingFallback }: { region: Region; usingFallback: bo
     try {
       const nearby = await fetchNearbyEvents(region, 30);
       setEvents([...DEV_EVENTS, ...nearby]);
+      if (!openRecorded) {
+        openRecorded = true;
+        recordAppOpen(nearby.length).catch(() => {});
+      }
     } catch (e) {
       setEvents([...DEV_EVENTS]);
       toast.error(userMessage(e, "Couldn't refresh hangouts.", 'nearbyEvents'));
