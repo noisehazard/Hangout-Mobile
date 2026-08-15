@@ -5,5 +5,5 @@ export function needsVerification(profile: { verified: boolean } | null): boolea
 }
 
 export function promptToVerify(): void {
-  toast.info('Verify your email in the You tab to create or join hangouts.');
+  toast.info('Save your account in the You tab to create or join hangouts.');
 }
