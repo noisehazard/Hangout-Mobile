@@ -42,7 +42,9 @@ function buildHtml(region: Region): string {
       padding: 6px 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.22);
       font: 700 14px -apple-system, Roboto, sans-serif; color: #111; white-space: nowrap;
     }
-    .cloud.open { border-color: #FF385C; }
+    .cloud.live { border-color: #2FBF71; }
+    .cloud.upcoming { border-color: #FF385C; }
+    .cloud .when { font-weight: 600; color: #6B6E76; font-size: 12px; }
     .cluster {
       display: flex; align-items: center; justify-content: center; gap: 4px;
       background: #FF385C; color: #fff; border: 2px solid #fff; border-radius: 24px;
@@ -55,7 +57,19 @@ function buildHtml(region: Region): string {
       60%  { transform: scale(1.12); opacity: 1; }
       100% { transform: scale(1);    opacity: 1; }
     }
+    @keyframes livePulse {
+      0%   { box-shadow: 0 2px 5px rgba(0,0,0,0.22), 0 0 0 0 rgba(47,191,113,0.55); }
+      70%  { box-shadow: 0 2px 5px rgba(0,0,0,0.22), 0 0 0 13px rgba(47,191,113,0); }
+      100% { box-shadow: 0 2px 5px rgba(0,0,0,0.22), 0 0 0 0 rgba(47,191,113,0); }
+    }
     .cloud, .cluster { animation: pop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    .cloud.live {
+      animation: pop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+                 livePulse 2s ease-out 0.34s infinite;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .cloud.live { animation: pop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    }
   </style>
 </head>
 <body>
@@ -86,6 +100,15 @@ function buildHtml(region: Region): string {
     });
     map.addLayer(cluster);
 
+    function startLabel(iso) {
+      var start = new Date(iso);
+      var mins = Math.round((start.getTime() - Date.now()) / 60000);
+      if (mins < 60) return 'in ' + mins + 'm';
+      var sameDay = start.toDateString() === new Date().toDateString();
+      var time = start.getHours() + ':' + ('0' + start.getMinutes()).slice(-2);
+      return sameDay ? time : start.toLocaleDateString([], { weekday: 'short' }) + ' ' + time;
+    }
+
     window.setEvents = function (events) {
       cluster.clearLayers();
       events.forEach(function (ev) {
@@ -96,8 +119,11 @@ function buildHtml(region: Region): string {
           }).addTo(cluster);
         }
         var emoji = ev.openToStrangers ? '👋' : '🎉';
+        var live = Date.parse(ev.startTime) <= Date.now();
+        var when = live ? '' : '<span class="when">' + startLabel(ev.startTime) + '</span>';
         var icon = L.divIcon({
-          html: '<div class="cloud ' + (ev.openToStrangers ? 'open' : '') + '">' + emoji + ' ' + ev.attendeeCount + '</div>',
+          html: '<div class="cloud ' + (live ? 'live' : 'upcoming') + '">' +
+                emoji + ' ' + ev.attendeeCount + when + '</div>',
           className: '', iconSize: null, iconAnchor: [0, 0]
         });
         var marker = L.marker([ev.latitude, ev.longitude], { icon: icon, attendeeCount: ev.attendeeCount });

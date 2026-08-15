@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -5,6 +6,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EventBottomSheet } from '@/components/EventBottomSheet';
+import { EventList } from '@/components/EventList';
 import { LeafletMap, ProjectedPoint } from '@/components/LeafletMap';
 import { MapIntro } from '@/components/MapIntro';
 import { DEV_EVENTS } from '@/data/devEvents';
@@ -35,6 +37,13 @@ function Discover({ region, usingFallback }: { region: Region; usingFallback: bo
     [events, selectedVibe],
   );
 
+  const liveCount = useMemo(
+    () => visibleEvents.filter((e) => Date.parse(e.startTime) <= Date.now()).length,
+    [visibleEvents],
+  );
+  const upcomingCount = visibleEvents.length - liveCount;
+
+  const [mode, setMode] = useState<'map' | 'list'>('map');
   const [projected, setProjected] = useState<ProjectedPoint[]>([]);
   const [introVisible, setIntroVisible] = useState(!introPlayed);
   const [markersRevealed, setMarkersRevealed] = useState(introPlayed);
@@ -108,20 +117,43 @@ function Discover({ region, usingFallback }: { region: Region; usingFallback: bo
 
   return (
     <View style={styles.container}>
-      <LeafletMap
-        events={visibleEvents}
-        region={region}
-        onSelectEvent={handleSelectEvent}
-        deferMarkers={introVisible && !markersRevealed}
-        onPointsProjected={introVisible ? setProjected : undefined}
-      />
+      {mode === 'map' ? (
+        <LeafletMap
+          events={visibleEvents}
+          region={region}
+          onSelectEvent={handleSelectEvent}
+          deferMarkers={introVisible && !markersRevealed}
+          onPointsProjected={introVisible ? setProjected : undefined}
+        />
+      ) : (
+        <EventList
+          events={visibleEvents}
+          onSelect={(id) => router.push({ pathname: '/event/[id]', params: { id } })}
+          contentInsetTop={insets.top + 110}
+        />
+      )}
       <View style={styles.topOverlay} pointerEvents="box-none">
-        <View style={[styles.header, { paddingTop: insets.top + 12 }]} pointerEvents="none">
-          <Text style={styles.headerTitle}>Happening now</Text>
+        <View style={[styles.header, { paddingTop: insets.top + 12 }]} pointerEvents="box-none">
+          <Pressable
+            style={styles.modeToggle}
+            onPress={() => setMode((m) => (m === 'map' ? 'list' : 'map'))}
+          >
+            <Ionicons
+              name={mode === 'map' ? 'list' : 'map'}
+              size={16}
+              color={Colors.text}
+            />
+            <Text style={styles.modeToggleText}>{mode === 'map' ? 'List' : 'Map'}</Text>
+          </Pressable>
+          <Text style={styles.headerTitle}>
+            {liveCount > 0 ? `${liveCount} happening now` : "What's on"}
+          </Text>
           <Text style={styles.headerSubtitle}>
             {usingFallback
               ? 'Showing Chișinău — enable location to see your area'
-              : 'Tap a bubble to see who\'s out'}
+              : upcomingCount > 0
+                ? `${upcomingCount} starting later — green is live, red hasn't started`
+                : 'Tap a bubble to see who\'s out'}
           </Text>
         </View>
         <ScrollView
@@ -144,7 +176,7 @@ function Discover({ region, usingFallback }: { region: Region; usingFallback: bo
           })}
         </ScrollView>
       </View>
-      {visibleEvents.length === 0 && (
+      {mode === 'map' && visibleEvents.length === 0 && (
         <View style={styles.emptyHint} pointerEvents="none">
           <Text style={styles.emptyHintText}>
             {selectedVibe
@@ -162,7 +194,7 @@ function Discover({ region, usingFallback }: { region: Region; usingFallback: bo
           router.push({ pathname: '/event/[id]', params: { id } });
         }}
       />
-      {introVisible && (
+      {mode === 'map' && introVisible && (
         <MapIntro
           heroEvents={heroes}
           targets={targets}
@@ -214,6 +246,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
     backgroundColor: 'rgba(255,255,255,0.92)',
+  },
+  modeToggle: {
+    position: 'absolute',
+    right: 20,
+    bottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: '#ffffff',
+  },
+  modeToggleText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.text,
   },
   chipBar: {
     marginTop: 8,
