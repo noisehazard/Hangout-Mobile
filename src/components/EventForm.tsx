@@ -16,7 +16,28 @@ import {
 } from 'react-native';
 
 import { LocationPickerMap } from '@/components/LocationPickerMap';
-import { EndsInPreset, endsAtFromPreset } from '@/data/eventMappers';
+import { endsAtFromPreset } from '@/data/eventMappers';
+
+const HOUR_MS = 60 * 60 * 1000;
+
+function formatWhen(d: Date): string {
+  return d.toLocaleString([], {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function formatDuration(from: Date, to: Date): string {
+  const minutes = Math.round((to.getTime() - from.getTime()) / 60000);
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `Lasts ${m} min`;
+  if (m === 0) return `Lasts ${h}h`;
+  return `Lasts ${h}h ${m}m`;
+}
 import { userMessage } from '@/lib/errors';
 import { PlaceResult, reverseGeocode, searchPlaces } from '@/lib/geocode';
 import { uploadEventPhoto } from '@/lib/storage';
@@ -66,10 +87,9 @@ export function EventForm({ initial, defaultCenter, submitLabel, onSubmit }: Pro
   const [endsAt, setEndsAt] = useState<Date>(() =>
     initial?.endsAt ? new Date(initial.endsAt) : new Date(endsAtFromPreset('3h', startsAt))
   );
-  const [activePreset, setActivePreset] = useState<EndsInPreset | null>(() =>
-    initial?.endsAt ? null : '3h'
+  const [picker, setPicker] = useState<null | { field: 'starts' | 'ends'; mode: 'date' | 'time' }>(
+    null,
   );
-  const [picker, setPicker] = useState<null | 'date' | 'time'>(null);
 
   const [photoUrl, setPhotoUrl] = useState<string | null>(initial?.photoUrl ?? null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -77,7 +97,8 @@ export function EventForm({ initial, defaultCenter, submitLabel, onSubmit }: Pro
     initial?.locationPrecision ?? 'approx',
   );
 
-  const canPost = title.trim().length > 0;
+  const endsAfterStarts = endsAt.getTime() > startsAt.getTime();
+  const canPost = title.trim().length > 0 && endsAfterStarts;
 
   useEffect(() => {
     const q = placeQuery;
@@ -102,31 +123,36 @@ export function EventForm({ initial, defaultCenter, submitLabel, onSubmit }: Pro
     if (name) setLocationName(name);
   }
 
-  function applyNewStartsAt(newStartsAt: Date) {
-    setStartsAt(newStartsAt);
-    if (activePreset) {
-      setEndsAt(new Date(endsAtFromPreset(activePreset, newStartsAt)));
+  function applyPicked(field: 'starts' | 'ends', value: Date) {
+    if (field === 'ends') {
+      setEndsAt(value);
+      return;
     }
+    const duration = Math.max(endsAt.getTime() - startsAt.getTime(), HOUR_MS);
+    setStartsAt(value);
+    setEndsAt(new Date(value.getTime() + duration));
   }
 
   function onPickerChange(event: { type: string }, selected?: Date) {
+    if (!picker) return;
     if (event.type === 'dismissed' || !selected) {
       setPicker(null);
       return;
     }
-    if (Platform.OS === 'android' && picker === 'date') {
-      const merged = new Date(startsAt);
+    const current = picker.field === 'starts' ? startsAt : endsAt;
+    if (Platform.OS === 'android' && picker.mode === 'date') {
+      const merged = new Date(current);
       merged.setFullYear(selected.getFullYear(), selected.getMonth(), selected.getDate());
-      applyNewStartsAt(merged);
-      setPicker('time');
+      applyPicked(picker.field, merged);
+      setPicker({ field: picker.field, mode: 'time' });
       return;
     }
     if (Platform.OS === 'android') {
-      const merged = new Date(startsAt);
+      const merged = new Date(current);
       merged.setHours(selected.getHours(), selected.getMinutes(), 0, 0);
-      applyNewStartsAt(merged);
+      applyPicked(picker.field, merged);
     } else {
-      applyNewStartsAt(selected);
+      applyPicked(picker.field, selected);
     }
     setPicker(null);
   }
@@ -319,55 +345,30 @@ export function EventForm({ initial, defaultCenter, submitLabel, onSubmit }: Pro
       <Text style={styles.label}>Starts</Text>
       <Pressable
         style={[styles.input, { flexDirection: 'row', alignItems: 'center' }]}
-        onPress={() => setPicker(Platform.OS === 'ios' ? 'time' : 'date')}
+        onPress={() => setPicker({ field: 'starts', mode: Platform.OS === 'ios' ? 'time' : 'date' })}
       >
-        <Text style={{ fontSize: 15, color: Colors.text }}>
-          {startsAt.toLocaleString([], {
-            weekday: 'short',
-            hour: 'numeric',
-            minute: '2-digit',
-            month: 'short',
-            day: 'numeric',
-          })}
-        </Text>
+        <Text style={{ fontSize: 15, color: Colors.text }}>{formatWhen(startsAt)}</Text>
       </Pressable>
+
+      <Text style={styles.label}>Ends</Text>
+      <Pressable
+        style={[styles.input, { flexDirection: 'row', alignItems: 'center' }]}
+        onPress={() => setPicker({ field: 'ends', mode: Platform.OS === 'ios' ? 'time' : 'date' })}
+      >
+        <Text style={{ fontSize: 15, color: Colors.text }}>{formatWhen(endsAt)}</Text>
+      </Pressable>
+      <Text style={[styles.endsAtHint, !endsAfterStarts && styles.endsAtError]}>
+        {endsAfterStarts ? formatDuration(startsAt, endsAt) : 'End time must be after the start.'}
+      </Text>
+
       {picker && (
         <DateTimePicker
-          value={startsAt}
-          mode={Platform.OS === 'ios' ? 'datetime' : picker}
+          value={picker.field === 'starts' ? startsAt : endsAt}
+          mode={Platform.OS === 'ios' ? 'datetime' : picker.mode}
+          minimumDate={picker.field === 'ends' ? startsAt : undefined}
           onChange={onPickerChange}
         />
       )}
-
-      <Text style={styles.label}>Ends in</Text>
-      <View style={styles.chips}>
-        {(['1h', '3h', 'tonight'] as EndsInPreset[]).map((p) => {
-          const active = activePreset === p;
-          const label = p === 'tonight' ? 'Tonight' : p;
-          return (
-            <Pressable
-              key={p}
-              onPress={() => {
-                setActivePreset(p);
-                setEndsAt(new Date(endsAtFromPreset(p, startsAt)));
-              }}
-              style={[styles.chip, active && styles.chipActive]}
-            >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      <Text style={styles.endsAtHint}>
-        Ends:{' '}
-        {endsAt.toLocaleString([], {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-        })}
-      </Text>
 
       <Pressable
         onPress={handleSubmit}
@@ -455,6 +456,7 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 14, color: Colors.textMuted, fontWeight: '600' },
   chipTextActive: { color: Colors.accent },
   endsAtHint: { fontSize: 13, color: Colors.textMuted, marginTop: Spacing.xs },
+  endsAtError: { color: '#D6455D', fontWeight: '600' },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
