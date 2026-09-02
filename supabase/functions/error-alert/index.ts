@@ -23,7 +23,11 @@ Deno.serve(async (req) => {
   if (!row) return json({ skipped: 'no record' });
   if (!row.fatal) return json({ skipped: 'not fatal' });
 
-  await sendAlert(formatCrashMail(row));
+  try {
+    await sendAlert(formatCrashMail(row));
+  } catch (e) {
+    return json({ error: e instanceof Error ? e.message : String(e) }, 500);
+  }
   return json({ sent: 'crash' });
 });
 
@@ -40,7 +44,11 @@ async function sendDigest(): Promise<Response> {
   const mail = formatDigestMail((data ?? []) as DigestRow[], since);
   if (!mail) return json({ sent: 'nothing', reason: 'no errors in window' });
 
-  await sendAlert(mail);
+  try {
+    await sendAlert(mail);
+  } catch (e) {
+    return json({ error: e instanceof Error ? e.message : String(e) }, 500);
+  }
   return json({ sent: 'digest', groups: (data ?? []).length });
 }
 

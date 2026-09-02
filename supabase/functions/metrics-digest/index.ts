@@ -14,7 +14,15 @@ Deno.serve(async () => {
   const rows = (data ?? []) as MetricsRow[];
   if (!rows.length) return json({ sent: 'nothing', reason: 'no metrics row' });
 
-  await sendAlert(formatMetricsMail(rows[0]));
+  try {
+    await sendAlert(formatMetricsMail(rows[0]));
+  } catch (e) {
+    // Surface the delivery failure in the response body. Without this the
+    // runtime turns it into a bare 500 and the reason is only visible in the
+    // dashboard logs. The message carries Telegram's status and description,
+    // never the bot token.
+    return json({ error: e instanceof Error ? e.message : String(e) }, 500);
+  }
   return json({ sent: 'metrics' });
 });
 
