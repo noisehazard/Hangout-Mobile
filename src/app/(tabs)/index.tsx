@@ -13,11 +13,13 @@ import { DEV_EVENTS } from '@/data/devEvents';
 import { fetchNearbyEvents, joinEvent } from '@/data/events';
 import { recordAppOpen } from '@/data/metrics';
 import { filterEventsByVibe, VIBES } from '@/data/vibes';
+import { useNow } from '@/hooks/useNow';
+import { useUserLocation } from '@/hooks/useUserLocation';
+import { useAuth } from '@/lib/auth';
 import { userMessage } from '@/lib/errors';
+import { isLive } from '@/lib/eventTime';
 import { needsVerification, promptToVerify } from '@/lib/gating';
 import { toast } from '@/lib/toast';
-import { useAuth } from '@/lib/auth';
-import { useUserLocation } from '@/hooks/useUserLocation';
 import { HangoutEvent } from '@/types/event';
 import { Colors } from '@/theme';
 
@@ -39,9 +41,10 @@ function Discover({ region, usingFallback }: { region: Region; usingFallback: bo
     [events, selectedVibe],
   );
 
+  const now = useNow();
   const liveCount = useMemo(
-    () => visibleEvents.filter((e) => Date.parse(e.startTime) <= Date.now()).length,
-    [visibleEvents],
+    () => visibleEvents.filter((e) => isLive(e.startTime, now)).length,
+    [visibleEvents, now],
   );
   const upcomingCount = visibleEvents.length - liveCount;
 

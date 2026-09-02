@@ -17,6 +17,13 @@ import {
 
 import { LocationPickerMap } from '@/components/LocationPickerMap';
 import { endsAtFromPreset } from '@/data/eventMappers';
+import { VIBES } from '@/data/vibes';
+import { userMessage } from '@/lib/errors';
+import { PlaceResult, reverseGeocode, searchPlaces } from '@/lib/geocode';
+import { uploadEventPhoto } from '@/lib/storage';
+import { toast } from '@/lib/toast';
+import { Colors, Spacing } from '@/theme';
+import { EventVisibility } from '@/types/event';
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -38,13 +45,7 @@ function formatDuration(from: Date, to: Date): string {
   if (m === 0) return `Lasts ${h}h`;
   return `Lasts ${h}h ${m}m`;
 }
-import { userMessage } from '@/lib/errors';
-import { PlaceResult, reverseGeocode, searchPlaces } from '@/lib/geocode';
-import { uploadEventPhoto } from '@/lib/storage';
-import { toast } from '@/lib/toast';
-import { VIBES } from '@/data/vibes';
-import { EventVisibility } from '@/types/event';
-import { Colors, Spacing } from '@/theme';
+const NO_PLACES: PlaceResult[] = [];
 
 export type EventFormValues = {
   title: string;
@@ -100,12 +101,13 @@ export function EventForm({ initial, defaultCenter, submitLabel, onSubmit }: Pro
   const endsAfterStarts = endsAt.getTime() > startsAt.getTime();
   const canPost = title.trim().length > 0 && endsAfterStarts;
 
+  // Results are only shown for a query long enough to have produced them, so a
+  // short query hides them without a state write.
+  const visibleResults = placeQuery.trim().length < 3 ? NO_PLACES : placeResults;
+
   useEffect(() => {
     const q = placeQuery;
-    if (q.trim().length < 3) {
-      setPlaceResults([]);
-      return;
-    }
+    if (q.trim().length < 3) return;
     const t = setTimeout(async () => setPlaceResults(await searchPlaces(q)), 500);
     return () => clearTimeout(t);
   }, [placeQuery]);
@@ -313,9 +315,9 @@ export function EventForm({ initial, defaultCenter, submitLabel, onSubmit }: Pro
         value={placeQuery}
         onChangeText={setPlaceQuery}
       />
-      {placeResults.length > 0 && (
+      {visibleResults.length > 0 && (
         <View>
-          {placeResults.map((p, i) => (
+          {visibleResults.map((p, i) => (
             <Pressable key={`${p.latitude}-${p.longitude}-${i}`} style={styles.resultRow} onPress={() => choosePlace(p)}>
               <Text style={{ fontSize: 14, color: Colors.text }} numberOfLines={1}>
                 {p.name}

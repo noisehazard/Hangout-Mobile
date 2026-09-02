@@ -15,7 +15,7 @@ import { HangoutEvent } from '@/types/event';
 
 type Props = {
   heroEvents: HangoutEvent[];
-  targets: Array<ProjectedPoint | null>;
+  targets: (ProjectedPoint | null)[];
   onReveal: () => void;
   onDone: () => void;
 };
@@ -42,15 +42,16 @@ function visualFor(theme: string | null): { emoji: string; color: string } {
 
 export function MapIntro({ heroEvents, targets, onReveal, onDone }: Props) {
   const { width, height } = useWindowDimensions();
-  const [started, setStarted] = useState(false);
+  // One-shot guard: read only inside the effect below, never during render.
+  const started = useRef(false);
 
-  const bgOpacity = useRef(new Animated.Value(1)).current;
-  const anims = useRef(
+  const [bgOpacity] = useState(() => new Animated.Value(1));
+  const [anims] = useState(() =>
     Array.from({ length: 3 }, () => ({
       enter: new Animated.Value(0),
       move: new Animated.Value(0),
     })),
-  ).current;
+  );
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const starts = useMemo(() => {
@@ -65,11 +66,11 @@ export function MapIntro({ heroEvents, targets, onReveal, onDone }: Props) {
   }, [width, height]);
 
   useEffect(() => {
-    if (started) return;
+    if (started.current) return;
     const n = heroEvents.length;
     if (n === 0) return;
     if (targets.length < n || !targets.slice(0, n).every(Boolean)) return;
-    setStarted(true);
+    started.current = true;
 
     const used = anims.slice(0, n);
     Animated.stagger(
@@ -103,7 +104,7 @@ export function MapIntro({ heroEvents, targets, onReveal, onDone }: Props) {
         ]).start(() => onDone());
       }, 480);
     });
-  }, [heroEvents, targets, started, anims, bgOpacity, onReveal, onDone]);
+  }, [heroEvents, targets, anims, bgOpacity, onReveal, onDone]);
 
   useEffect(
     () => () => {

@@ -11,6 +11,9 @@ export const googleSignInAvailable =
   Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
 
 function loadGoogleSignin() {
+  // Deliberately lazy: the native module is absent in Expo Go, so a static
+  // import would crash the app at load rather than at the point of use.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   return require('@react-native-google-signin/google-signin')
     .GoogleSignin as typeof import('@react-native-google-signin/google-signin').GoogleSignin;
 }

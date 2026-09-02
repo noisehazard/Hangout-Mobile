@@ -25,8 +25,12 @@ export function ToastHost() {
   const opacity = useSharedValue(0);
 
   const hide = useCallback(() => {
+    // Assigning to a Reanimated shared value is that library's documented API,
+    // not a mutation of React-owned state.
+    /* eslint-disable react-hooks/immutability */
     translateY.value = withTiming(120, { duration: OUT_MS });
     opacity.value = withTiming(0, { duration: OUT_MS });
+    /* eslint-enable react-hooks/immutability */
     if (clearTimer.current) clearTimeout(clearTimer.current);
     clearTimer.current = setTimeout(() => setPayload(null), OUT_MS);
   }, [opacity, translateY]);

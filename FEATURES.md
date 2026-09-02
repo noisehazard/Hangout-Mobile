@@ -29,7 +29,7 @@ Four bottom tabs: **Discover**, **Create**, **Friends**, **You**.
 ## Legal & distribution
 
 - **Privacy Policy + Terms** — in-app `/legal` screen (linked from You → "Privacy & Terms"). Template text; bracketed fields (`[DATE]`, `[CONTACT EMAIL]`, `[JURISDICTION]`) must be filled/reviewed before launch. Google Play also requires the policy at a **public URL**, which is not yet hosted.
-- **Support** — You → "Help & feedback" opens a pre-addressed email with the user's handle, app version, and device attached. "Location & privacy" is still an inert row.
+- **Support** — You → "Help & feedback" opens a pre-addressed email with the user's handle, app version, and device attached. Contact details and the legal copy's operator/jurisdiction live in `src/lib/contact.ts`; the operator and governing law are still placeholders and Play review will reject them.
 - **EAS build config** — `eas.json` with `development` (dev client, for push testing), `preview` (internal APK), and `production` (Play app-bundle) profiles; `app.json` has Android package `com.hangout.app`. Actual builds require an Expo account (`npx eas build --profile <name> --platform android`).
 
 ## Onboarding

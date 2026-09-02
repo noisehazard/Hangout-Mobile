@@ -81,6 +81,9 @@ export default function EventDetailScreen() {
   }, [id, k]);
 
   useEffect(() => {
+    // load() is async and every setState in it sits behind an await, so nothing
+    // is set synchronously here; the rule does not model async boundaries.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 

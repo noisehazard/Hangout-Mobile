@@ -17,19 +17,15 @@ type LocationState = {
 };
 
 export function useUserLocation(): LocationState {
-  const [state, setState] = useState<LocationState>({
-    region: DEFAULT_REGION,
-    loading: true,
-    usingFallback: true,
-  });
+  const [state, setState] = useState<LocationState>(() =>
+    __DEV__
+      ? { region: CHISINAU_REGION, loading: false, usingFallback: false }
+      : { region: DEFAULT_REGION, loading: true, usingFallback: true },
+  );
 
   useEffect(() => {
+    if (__DEV__) return;
     let cancelled = false;
-
-    if (__DEV__) {
-      setState({ region: CHISINAU_REGION, loading: false, usingFallback: false });
-      return;
-    }
 
     async function resolve() {
       try {
