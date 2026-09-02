@@ -15,16 +15,17 @@ Deno.serve(async () => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   );
 
-  const { data: items, error: outboxErr } = await supabase
-    .from('notification_outbox')
-    .select('id, recipient_id, title, body, data')
-    .is('sent_at', null)
-    .order('created_at', { ascending: true })
-    .limit(100);
+  // Claim rather than select: the webhook fires once per inserted row, so
+  // several invocations run at once and would otherwise each read the same
+  // unsent rows and send them all. claim_notifications (migration 0023) hands
+  // each row to exactly one caller.
+  const { data: items, error: outboxErr } = await supabase.rpc('claim_notifications', {
+    p_limit: 100,
+  });
   if (outboxErr) return json({ error: outboxErr.message }, 500);
   if (!items || items.length === 0) return json({ processed: 0 });
 
-  const recipientIds = [...new Set(items.map((i) => i.recipient_id))];
+  const recipientIds = [...new Set((items as OutboxItem[]).map((i) => i.recipient_id))];
   const { data: tokenRows, error: tokErr } = await supabase
     .from('push_tokens')
     .select('token, profile_id')
@@ -49,10 +50,13 @@ Deno.serve(async () => {
     invalidTokens.push(...invalidTokensFromTickets(batch, tickets));
   }
 
+  // Only now that Expo has accepted them. A row claimed but never stamped is
+  // retried once its claim goes stale, so a crash here delays delivery rather
+  // than dropping it.
   await supabase
     .from('notification_outbox')
     .update({ sent_at: new Date().toISOString() })
-    .in('id', items.map((i) => i.id));
+    .in('id', (items as OutboxItem[]).map((i) => i.id));
 
   if (invalidTokens.length > 0) {
     await supabase.from('push_tokens').delete().in('token', invalidTokens);
