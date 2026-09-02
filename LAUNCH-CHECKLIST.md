@@ -22,6 +22,8 @@ Keep this current the same way `FEATURES.md` is kept current.
   on `com.hangout.app`, `google-services.json` is copied in, FCM default channel
   is `default` (matches `ANDROID_CHANNEL_ID`), deep-link scheme is `hangout`.
 - Migrations 0001–0022 all applied.
+- App verified running in Expo Go on the emulator after the rename (onboarding
+  renders, `[push] not registering: expo-go` degrades gracefully).
 
 ---
 
