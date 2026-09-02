@@ -1,11 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts';
+import { sendAlert } from '../_shared/telegram.ts';
 import {
   formatCrashMail,
   formatDigestMail,
   type DigestRow,
   type ErrorRow,
-  type Mail,
 } from './format.ts';
 
 Deno.serve(async (req) => {
@@ -24,7 +23,7 @@ Deno.serve(async (req) => {
   if (!row) return json({ skipped: 'no record' });
   if (!row.fatal) return json({ skipped: 'not fatal' });
 
-  await sendMail(formatCrashMail(row));
+  await sendAlert(formatCrashMail(row));
   return json({ sent: 'crash' });
 });
 
@@ -41,29 +40,8 @@ async function sendDigest(): Promise<Response> {
   const mail = formatDigestMail((data ?? []) as DigestRow[], since);
   if (!mail) return json({ sent: 'nothing', reason: 'no errors in window' });
 
-  await sendMail(mail);
+  await sendAlert(mail);
   return json({ sent: 'digest', groups: (data ?? []).length });
-}
-
-async function sendMail(mail: Mail): Promise<void> {
-  const to = Deno.env.get('ALERT_EMAIL_TO');
-  const user = Deno.env.get('SMTP_USER');
-  const password = Deno.env.get('SMTP_PASS');
-  const hostname = Deno.env.get('SMTP_HOST') ?? 'smtp.gmail.com';
-  const port = Number(Deno.env.get('SMTP_PORT') ?? '465');
-  if (!to || !user || !password) {
-    console.warn('[error-alert] SMTP env not configured; skipping send');
-    return;
-  }
-
-  const client = new SMTPClient({
-    connection: { hostname, port, tls: true, auth: { username: user, password } },
-  });
-  try {
-    await client.send({ from: user, to, subject: mail.subject, content: mail.text });
-  } finally {
-    await client.close();
-  }
 }
 
 function json(body: unknown, status = 200): Response {
