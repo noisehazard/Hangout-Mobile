@@ -1,8 +1,7 @@
 import { type Href, router, useRootNavigationState } from 'expo-router';
-import * as Notifications from 'expo-notifications';
 import { useEffect, useRef } from 'react';
 
-import { registerForPushNotifications } from '@/data/push';
+import { registerForPushNotifications, subscribeToNotificationTaps } from '@/data/push';
 import { useAuth } from '@/lib/auth';
 import { hrefFromNotificationData } from '@/lib/push';
 
@@ -13,13 +12,16 @@ import { hrefFromNotificationData } from '@/lib/push';
  * Registration here is silent: it only refreshes the token when permission has
  * already been granted, so nobody sees a system prompt on app start. The opt-in
  * prompt lives on the Notifications screen.
+ *
+ * Nothing in this file imports expo-notifications — that module throws on
+ * import in Expo Go, so all access to it is funnelled through @/data/push,
+ * which loads it lazily behind an availability check.
  */
 export function usePushNotifications(): void {
   const { session } = useAuth();
   const userId = session?.user.id ?? null;
   const navigationState = useRootNavigationState();
   const navigationReady = Boolean(navigationState?.key);
-  const response = Notifications.useLastNotificationResponse();
   const handled = useRef<string | null>(null);
 
   useEffect(() => {
@@ -41,14 +43,15 @@ export function usePushNotifications(): void {
   }, [userId]);
 
   useEffect(() => {
-    // Covers both a tap while running and a cold start from a notification, so
-    // we must wait for the navigator to exist before pushing a route.
-    if (!response || !navigationReady) return;
-    const id = response.notification.request.identifier;
-    if (handled.current === id) return;
-    handled.current = id;
+    // Wait for the navigator to exist — a cold start from a notification would
+    // otherwise push a route before there is anywhere to push it to.
+    if (!navigationReady) return;
 
-    const href = hrefFromNotificationData(response.notification.request.content.data);
-    if (href) router.push(href as Href);
-  }, [response, navigationReady]);
+    return subscribeToNotificationTaps(({ identifier, data }) => {
+      if (handled.current === identifier) return;
+      handled.current = identifier;
+      const href = hrefFromNotificationData(data);
+      if (href) router.push(href as Href);
+    });
+  }, [navigationReady]);
 }
