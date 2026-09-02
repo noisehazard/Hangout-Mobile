@@ -1,5 +1,5 @@
 {
-  "name": "hangout-ai",
+  "name": "hangout",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {

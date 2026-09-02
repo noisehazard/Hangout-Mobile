@@ -103,7 +103,7 @@ export default function ProfileScreen() {
       `Device: ${Device.modelName ?? 'unknown'} (${Device.osName ?? '?'} ${Device.osVersion ?? '?'})`,
     ].join('\n');
     const url = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
-      'HangoutAI feedback',
+      'Hangout feedback',
     )}&body=${encodeURIComponent(context)}`;
     try {
       const supported = await Linking.canOpenURL(url);

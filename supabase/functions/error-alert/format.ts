@@ -41,7 +41,7 @@ function device(row: {
 export function formatCrashMail(row: ErrorRow): Mail {
   const where = row.tag || 'unknown';
   return {
-    subject: `[HangoutAI] Crash in ${where}`,
+    subject: `[Hangout] Crash in ${where}`,
     text: [
       `A crash was reported.`,
       ``,
@@ -68,7 +68,7 @@ export function formatDigestMail(rows: DigestRow[], since: string): Mail | null 
   });
 
   return {
-    subject: `[HangoutAI] ${total} error${total === 1 ? '' : 's'} in the last day${
+    subject: `[Hangout] ${total} error${total === 1 ? '' : 's'} in the last day${
       crashes.length > 0 ? ` (${crashes.length} crash type${crashes.length === 1 ? '' : 's'})` : ''
     }`,
     text: [`Errors since ${since}:`, ``, ...lines].join('\n'),

@@ -48,7 +48,7 @@ describe('hrefFromNotificationData', () => {
   it('rejects anything that could leave the app', () => {
     expect(hrefFromNotificationData({ url: '//evil.example/friends' })).toBeNull();
     expect(hrefFromNotificationData({ url: 'https://evil.example' })).toBeNull();
-    expect(hrefFromNotificationData({ url: 'hangoutai://friends' })).toBeNull();
+    expect(hrefFromNotificationData({ url: 'hangout://friends' })).toBeNull();
     expect(hrefFromNotificationData({ url: '/friends /x' })).toBeNull();
   });
 

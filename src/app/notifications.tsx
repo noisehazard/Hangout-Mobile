@@ -99,7 +99,7 @@ export default function NotificationsScreen() {
       {state.kind === 'off' && !state.canAskAgain && (
         <>
           <Text style={styles.note}>
-            Notifications are blocked for HangoutAI. You can turn them back on in your phone&apos;s
+            Notifications are blocked for Hangout. You can turn them back on in your phone&apos;s
             settings.
           </Text>
           <Pressable style={styles.cta} onPress={() => Linking.openSettings()}>

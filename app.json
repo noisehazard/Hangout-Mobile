@@ -1,17 +1,18 @@
 {
   "expo": {
-    "name": "HangoutAI",
+    "name": "Hangout",
     "slug": "hangout",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "hangoutai",
+    "scheme": "hangout",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"
     },
     "android": {
-      "package": "com.hangoutai.app",
+      "package": "com.hangout.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -33,7 +34,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "HangoutAI uses your location to show events and hangouts happening near you."
+          "locationWhenInUsePermission": "Hangout uses your location to show events and hangouts happening near you."
         }
       ],
       [
