@@ -21,7 +21,11 @@ Keep this current the same way `FEATURES.md` is kept current.
 - `npx expo prebuild -p android --clean` run after the rename. Native project is
   on `com.hangout.app`, `google-services.json` is copied in, FCM default channel
   is `default` (matches `ANDROID_CHANNEL_ID`), deep-link scheme is `hangout`.
-- Migrations 0001–0022 all applied.
+- Migrations 0001–0023 all applied.
+- Database Webhook "Alert on client error" on `client_errors` INSERT →
+  `error-alert`, verified end to end: a fatal test row produced a Telegram
+  alert. Crons `error-digest-daily` and `metrics-digest-weekly` registered and
+  active.
 - App verified running in Expo Go on the emulator after the rename (onboarding
   renders, `[push] not registering: expo-go` degrades gracefully).
 
@@ -41,9 +45,11 @@ and are the two entries under "Blocks launch" below:
 - **Step 6** = OTP email deliverability. Not blocked on anything — just not done
   yet. **This is the highest-risk unknown in the whole project.**
 
-**The next piece of code work**, and the last thing fixable without a device, is
-known issue #1 below: the duplicate-push race in `send-push`. It was offered and
-neither accepted nor declined.
+**The duplicate-push race is fixed, applied and deployed** (2026-09-03). That
+was the last thing fixable without a device.
+
+**Everything that remains needs Daniel**: two strings in `src/lib/contact.ts`, a
+Play Console account, two cross-provider email checks, and a phone.
 
 **Then** the remaining work genuinely requires Daniel: a phone, a Play account,
 and two strings.
@@ -98,15 +104,6 @@ Needs `npx expo run:android` on a real phone.
 
 ---
 
-## Unconfirmed — one dashboard glance each
-
-- [ ] Database Webhook on `client_errors` INSERT → `error-alert`. Without it,
-      real crashes trigger nothing.
-- [ ] Crons registered: `select jobname, schedule, active from cron.job;` should
-      list `error-digest-daily` and `metrics-digest-weekly`.
-
----
-
 ## Known issues, priority order
 
 1. ~~**Duplicate push notifications.**~~ **Fixed in code** — migration
@@ -114,9 +111,11 @@ Needs `npx expo run:android` on a real phone.
    RPC using `FOR UPDATE SKIP LOCKED`, and `send-push` now claims instead of
    selecting. Claiming is separate from sending, so a crashed invocation retries
    after 5 minutes rather than losing the notification.
-   **Outstanding: apply migration 0023, then redeploy `send-push`** — in that
-   order, since the function calls an RPC that does not exist until the
-   migration runs.
+   Migration applied and `send-push` redeployed 2026-09-03. Verified the
+   deployed function drains through the RPC, including three concurrent
+   invocations. **Not yet proven:** the claim semantics under real contention —
+   that needs actual queued rows and registered device tokens, so it rides along
+   with the device test.
 2. **`LeafletMap` has the frozen-clock bug.** `src/components/LeafletMap.tsx`
    computes live/`startLabel` inside injected WebView JS that only re-runs when
    markers are pushed, so labels go stale. The React side was fixed with
