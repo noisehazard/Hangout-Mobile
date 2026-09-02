@@ -27,6 +27,29 @@ Keep this current the same way `FEATURES.md` is kept current.
 
 ---
 
+## Where we left off (2026-09-02, end of session)
+
+`main` = `faa115d`. Typecheck, lint and 104 tests all clean. Emulator verified
+working; the app runs and renders.
+
+**The 7-step post-rename plan was worked through in order. Steps 1-4 and 7 are
+done** (see "Done" above). **Steps 5 and 6 were deliberately parked by Daniel**
+and are the two entries under "Blocks launch" below:
+
+- **Step 5** = the legal placeholders. Blocked on two decisions only Daniel can
+  make: the name to publish under, and the governing law.
+- **Step 6** = OTP email deliverability. Not blocked on anything — just not done
+  yet. **This is the highest-risk unknown in the whole project.**
+
+**The next piece of code work**, and the last thing fixable without a device, is
+known issue #1 below: the duplicate-push race in `send-push`. It was offered and
+neither accepted nor declined.
+
+**Then** the remaining work genuinely requires Daniel: a phone, a Play account,
+and two strings.
+
+---
+
 ## Blocks launch
 
 ### 1. OTP email delivery — highest risk, unverified
