@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -21,15 +21,18 @@ import * as ImagePicker from 'expo-image-picker';
 import { setHandle } from '@/data/friends';
 import { removeAvatar, uploadAvatar } from '@/lib/storage';
 import { googleSignInAvailable, useAuth } from '@/lib/auth';
+import { SUPPORT_EMAIL } from '@/lib/contact';
 import { userMessage } from '@/lib/errors';
 import { toast } from '@/lib/toast';
 import { Colors, Spacing } from '@/theme';
 
 type Row = { icon: keyof typeof Ionicons.glyphMap; label: string };
 
+// Every row here must lead somewhere. "Location & privacy" was removed rather
+// than left inert: location precision is chosen per hangout on the create form,
+// and there is no account-level setting behind it yet.
 const SETTINGS: Row[] = [
   { icon: 'notifications-outline', label: 'Notifications' },
-  { icon: 'location-outline', label: 'Location & privacy' },
   { icon: 'ban-outline', label: 'Blocked users' },
   { icon: 'document-text-outline', label: 'Privacy & Terms' },
   { icon: 'help-circle-outline', label: 'Help & feedback' },
@@ -40,8 +43,6 @@ const SETTING_ROUTES: Record<string, '/legal' | '/blocked' | '/notifications'> =
   'Blocked users': '/blocked',
   Notifications: '/notifications',
 };
-
-const SUPPORT_EMAIL = 'dax0068@gmail.com';
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -58,18 +59,15 @@ export default function ProfileScreen() {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [stage, setStage] = useState<'idle' | 'code' | 'busy'>('idle');
-  const [handleInput, setHandleInput] = useState(profile?.handle ?? '');
-  const [handleSeeded, setHandleSeeded] = useState(false);
+  // The profile arrives asynchronously, so the field shows the saved handle until
+  // the user types — derived rather than seeded by an effect, which cascaded a
+  // render every time the profile loaded.
+  const [handleEdit, setHandleEdit] = useState<string | null>(null);
+  const handleInput = handleEdit ?? profile?.handle ?? '';
+  const setHandleInput = setHandleEdit;
   const [savingHandle, setSavingHandle] = useState(false);
   const [handleSaved, setHandleSaved] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-
-  useEffect(() => {
-    if (!handleSeeded && profile?.handle) {
-      setHandleInput(profile.handle);
-      setHandleSeeded(true);
-    }
-  }, [profile?.handle, handleSeeded]);
 
   function confirmDelete() {
     Alert.alert(

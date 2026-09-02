@@ -156,6 +156,10 @@ export function LeafletMap({
   const webRef = useRef<WebView>(null);
   const readyRef = useRef(false);
 
+  // Built once from the initial region on purpose — re-running this would reload
+  // the WebView and lose the user's pan/zoom. Later updates go through
+  // injectJavaScript below.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const source = useMemo(() => ({ html: buildHtml(region) }), []);
 
   function pushEvents() {

@@ -4,6 +4,12 @@ import { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import {
+  JURISDICTION,
+  LEGAL_LAST_UPDATED,
+  OPERATOR,
+  SUPPORT_EMAIL,
+} from '@/lib/contact';
 import { Colors, Spacing } from '@/theme';
 
 function H({ children }: { children: ReactNode }) {
@@ -23,7 +29,10 @@ export default function LegalScreen() {
       </Pressable>
 
       <Text style={styles.title}>Privacy Policy</Text>
-      <P>Last updated: [DATE]. Hangout (&quot;we&quot;) is operated by [ENTITY/NAME], contact [CONTACT EMAIL].</P>
+      <P>
+        Last updated: {LEGAL_LAST_UPDATED}. Hangout (&quot;we&quot;) is operated by {OPERATOR},
+        contact {SUPPORT_EMAIL}.
+      </P>
       <H>What we collect</H>
       <P>Account data (an anonymous id, and — if you verify — your email and chosen handle), your approximate or exact location when you use the map or post an event, the events you create or join, messages you send, and friend and block relationships.</P>
       <H>How we use it</H>
@@ -39,7 +48,7 @@ export default function LegalScreen() {
       <H>Children</H>
       <P>Hangout is not intended for anyone under 13 (or the minimum age in your country).</P>
       <H>Contact</H>
-      <P>Questions: [CONTACT EMAIL].</P>
+      <P>Questions: {SUPPORT_EMAIL}.</P>
 
       <Text style={[styles.title, { marginTop: Spacing.xl }]}>Terms of Service</Text>
       <P>By using Hangout you agree to these terms.</P>
@@ -52,7 +61,10 @@ export default function LegalScreen() {
       <H>Disclaimer</H>
       <P>The app is provided &quot;as is,&quot; without warranties. Meeting people carries real-world risk; use your judgment and meet in public where possible.</P>
       <H>Changes &amp; contact</H>
-      <P>We may update these terms; continued use means acceptance. Questions: [CONTACT EMAIL]. Governing law: [JURISDICTION].</P>
+      <P>
+        We may update these terms; continued use means acceptance. Questions: {SUPPORT_EMAIL}.
+        Governing law: {JURISDICTION}.
+      </P>
     </ScrollView>
   );
 }

@@ -1,3 +1,5 @@
+import { HangoutEvent } from '@/types/event';
+
 export type NearbyRow = {
   id: string;
   host_id: string;
@@ -19,7 +21,6 @@ export type NearbyRow = {
   visibility: 'public' | 'friends' | 'private';
 };
 
-import { HangoutEvent } from '@/types/event';
 
 export function rowToHangoutEvent(row: NearbyRow): HangoutEvent {
   return {

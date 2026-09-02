@@ -40,6 +40,9 @@ function buildHtml(point: Point): string {
 export function LocationPickerMap({ point, onChange }: Props) {
   const webRef = useRef<WebView>(null);
   const readyRef = useRef(false);
+  // Built once from the initial point on purpose — see LeafletMap. The marker is
+  // moved via injectJavaScript rather than by rebuilding the document.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const source = useMemo(() => ({ html: buildHtml(point) }), []);
 
   useEffect(() => {

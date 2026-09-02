@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useNow } from '@/hooks/useNow';
 import { isLive, startLabel } from '@/lib/eventTime';
 import { Colors, Spacing } from '@/theme';
 import { HangoutEvent } from '@/types/event';
@@ -21,8 +23,8 @@ function sortForList(events: HangoutEvent[], now: number): HangoutEvent[] {
 }
 
 export function EventList({ events, onSelect, contentInsetTop }: Props) {
-  const now = Date.now();
-  const ordered = sortForList(events, now);
+  const now = useNow();
+  const ordered = useMemo(() => sortForList(events, now), [events, now]);
 
   return (
     <FlatList
