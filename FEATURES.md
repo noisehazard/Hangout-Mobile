@@ -29,7 +29,7 @@ Four bottom tabs: **Discover**, **Create**, **Friends**, **You**.
 ## Legal & distribution
 
 - **Privacy Policy + Terms** — in-app `/legal` screen (linked from You → "Privacy & Terms"). Template text; bracketed fields (`[DATE]`, `[CONTACT EMAIL]`, `[JURISDICTION]`) must be filled/reviewed before launch. Google Play also requires the policy at a **public URL**, which is not yet hosted.
-- **Support** — You → "Help & feedback" opens a pre-addressed email with the user's handle, app version, and device attached. You → "Notifications" explains that push is not shipped yet. "Location & privacy" is still an inert row.
+- **Support** — You → "Help & feedback" opens a pre-addressed email with the user's handle, app version, and device attached. "Location & privacy" is still an inert row.
 - **EAS build config** — `eas.json` with `development` (dev client, for push testing), `preview` (internal APK), and `production` (Play app-bundle) profiles; `app.json` has Android package `com.hangoutai.app`. Actual builds require an Expo account (`npx eas build --profile <name> --platform android`).
 
 ## Onboarding
@@ -64,6 +64,23 @@ Four bottom tabs: **Discover**, **Create**, **Friends**, **You**.
 - **Public profiles** — tap anyone (attendee list, friends, chat) to open their profile: avatar, handle, verified badge, member-since, and mutual-friends count, with relationship-aware actions (add / accept / remove friend, block, report).
 - **Activity feed** — a bell button on the Friends tab opens `/activity`, a time-sorted feed of friends hosting or joining live/upcoming hangouts; tap a row for the event, tap an avatar for the profile.
 
+## Notifications
+
+- **Push notifications** — a nudge for a friend request, an accepted request, a hangout
+  invite, and a new message in a hangout you joined. Delivery is Expo Push: the
+  `notification_outbox` triggers (migration 0016) queue a row, the `send-push` Edge
+  Function drains it, and the device registers its Expo token through
+  `register_push_token` (0015).
+- **Opt-in, not on launch** — the app never shows the system prompt at start-up. It
+  re-registers silently only when permission is already granted; You → **Notifications**
+  is where you actually turn them on, after a screen explaining what you get. If
+  notifications were hard-blocked, that screen offers **Open settings** instead. In Expo Go
+  or on an emulator it says so rather than failing silently.
+- **Tap to open** — each notification carries a `data.url`, and tapping one opens that
+  screen (friends, a profile, a hangout), including from a cold start. The path is checked
+  against an allowlist of in-app routes first, so a payload can't push the app somewhere
+  unexpected.
+
 ## Chat
 
 - **Realtime chat** per event (Supabase Realtime), for people who've joined.
@@ -81,7 +98,7 @@ Four bottom tabs: **Discover**, **Create**, **Friends**, **You**.
 ## Not yet implemented (roadmap)
 
 - **Google sign-in release keys** — each signing key needs its own Android OAuth client in Google Cloud (debug + EAS release are different). Google config changes take minutes to propagate.
-- **Push notifications** (WS6) — DB foundation ✅ (`push_tokens` + `notification_outbox` + enqueue triggers) and send path ✅ (`send-push` Edge Function drains the outbox to the Expo Push API, prunes dead tokens). Remaining: deploy the function + wire the Database Webhook, and client registration/receive via `expo-notifications` (slice 3, needs `eas init` projectId + a dev build).
+- **Push notifications** (WS6) — all three code slices are done (DB foundation, `send-push` Edge Function, client). Remaining is deployment and device work, none of it code: deploy `send-push` + wire the Database Webhook on `notification_outbox` INSERT, fix the `google-services.json` package mismatch (see below), and verify delivery on a real device.
 - **Polish pass** (WS7) — error feedback and failure states ✅ (toasts, server-authored
   messages, Discover empty/error states). Remaining: a visual pass after real-device testing.
 - **Distribution** (WS8) — code side done (account deletion, legal screen, EAS profiles, package id). Remaining is running the EAS builds and the Google Play internal-testing setup (needs Expo + Play accounts).
@@ -113,6 +130,8 @@ Migrations live in `supabase/migrations/` and are applied by pasting them into t
 - `0021_metrics` — `app_opens` (insert-own, admin-read) + `record_app_open`, `soft_launch_metrics()` for the in-app admin panel and `admin_metrics_for_digest()` for the service-role weekly email.
 - `0022_rate_limits` — `check_rate_limit(action, max, window)` wired into `create_event` (10/h) and `join_event` (40/h), an end-after-start guard on create, and `duplicate_event(id, starts_at)` which re-posts your own hangout preserving its duration.
 - `0020_event_link_access` — `events.link_token` plus `enable_event_link` / `disable_event_link` (host-only) and the `security definer` pair `get_event_by_link` / `join_event_by_link`. Both are revoked from `public` and re-granted to `authenticated` — Postgres grants EXECUTE to PUBLIC by default, so revoking from `anon` alone leaves them open.
+
+**Push setup:** `google-services.json` currently declares `com.hangout.app` while `app.json` uses `com.hangoutai.app`. FCM rejects that mismatch, so the Firebase Android app has to be re-registered under the real package name before push can be delivered; `android.googleServicesFile` is deliberately left unset until then.
 
 **Setup notes:** custom SMTP is required for verification emails (see the root `README.md`); set `is_admin = true` on your own profile to access the admin Reports screen.
 
