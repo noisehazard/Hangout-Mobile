@@ -1,6 +1,7 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
+// Type-only: erased at compile time, so it never triggers a runtime require.
+import type { NotificationResponse } from 'expo-notifications';
 import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import {
@@ -12,6 +13,20 @@ import { supabase } from '@/lib/supabase';
 
 export const ANDROID_CHANNEL_ID = 'default';
 
+/**
+ * Loaded lazily and never at module scope.
+ *
+ * Importing expo-notifications *throws* on Android in Expo Go — remote
+ * notifications were removed from it in SDK 53. Because the root layout imports
+ * this module for installPushHandler(), a static import took the entire app
+ * down before any runtime guard could run. Every caller below checks
+ * pushBlockedReason() first, so this is only reached where the module exists.
+ */
+function loadNotifications() {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return require('expo-notifications') as typeof import('expo-notifications');
+}
+
 export type PushRegistration =
   | { status: 'registered'; token: string }
   | { status: 'denied'; canAskAgain: boolean }
@@ -22,6 +37,8 @@ export type PushRegistration =
  * module load from the root layout, alongside installErrorReporting().
  */
 export function installPushHandler(): void {
+  if (pushBlockedReason()) return;
+  const Notifications = loadNotifications();
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldPlaySound: true,
@@ -46,6 +63,7 @@ export function pushBlockedReason(): PushUnavailableReason | null {
 /** Android 13+ wants the channel to exist before the permission prompt. */
 async function ensureAndroidChannel(): Promise<void> {
   if (Platform.OS !== 'android') return;
+  const Notifications = loadNotifications();
   await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
     name: 'Hangout activity',
     importance: Notifications.AndroidImportance.DEFAULT,
@@ -58,6 +76,7 @@ export type PushPermissionState = { granted: boolean; canAskAgain: boolean };
 
 export async function pushPermissionState(): Promise<PushPermissionState> {
   if (pushBlockedReason()) return { granted: false, canAskAgain: false };
+  const Notifications = loadNotifications();
   const permissions = await Notifications.getPermissionsAsync();
   return { granted: permissions.granted, canAskAgain: permissions.canAskAgain };
 }
@@ -75,6 +94,7 @@ export async function registerForPushNotifications(
   const reason = pushBlockedReason();
   if (reason) return { status: 'unavailable', reason };
 
+  const Notifications = loadNotifications();
   await ensureAndroidChannel();
 
   let permissions = await Notifications.getPermissionsAsync();
@@ -98,6 +118,40 @@ export async function registerForPushNotifications(
   });
   if (error) throw error;
   return { status: 'registered', token };
+}
+
+export type NotificationTap = { identifier: string; data: unknown };
+
+/**
+ * Subscribes to notification taps, covering both a tap while the app runs and a
+ * cold start from a notification. Returns an unsubscribe function.
+ *
+ * This lives here rather than in the hook so that every expo-notifications
+ * access sits behind the availability guard — the hook form,
+ * useLastNotificationResponse, cannot be called conditionally.
+ */
+export function subscribeToNotificationTaps(onTap: (tap: NotificationTap) => void): () => void {
+  if (pushBlockedReason()) return () => {};
+
+  const Notifications = loadNotifications();
+  let active = true;
+
+  const emit = (response: NotificationResponse | null) => {
+    if (!active || !response) return;
+    onTap({
+      identifier: response.notification.request.identifier,
+      data: response.notification.request.content.data,
+    });
+  };
+
+  // Cold start: the tap that launched the app has already happened.
+  Notifications.getLastNotificationResponseAsync().then(emit).catch(() => {});
+  const subscription = Notifications.addNotificationResponseReceivedListener(emit);
+
+  return () => {
+    active = false;
+    subscription.remove();
+  };
 }
 
 /** Drops this device's token so a signed-out account stops receiving its pushes. */
