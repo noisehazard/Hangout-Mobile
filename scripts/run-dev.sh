@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# HangoutAI dev runner (Windows / Git Bash).
+# Hangout dev runner (Windows / Git Bash).
 # Boots the Android emulator (hardware GPU), starts Metro, and launches the app
 # in Expo Go. Safe to run repeatedly — it skips whatever is already running.
 #
@@ -59,4 +59,4 @@ fi
 # 3) Forward the Metro port and open the app --------------------------------
 "$ADB" reverse tcp:8081 tcp:8081 >/dev/null
 "$ADB" shell am start -a android.intent.action.VIEW -d "exp://127.0.0.1:8081" host.exp.exponent >/dev/null 2>&1
-echo "✅ HangoutAI launched in the emulator."
+echo "✅ Hangout launched in the emulator."
