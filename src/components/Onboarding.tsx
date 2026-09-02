@@ -47,7 +47,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
       {step === 0 && (
         <View style={styles.body}>
           <Text style={styles.emoji}>👋</Text>
-          <Text style={styles.title}>Welcome to HangoutAI</Text>
+          <Text style={styles.title}>Welcome to Hangout</Text>
           <Text style={styles.sub}>
             See what&apos;s happening around you right now, and let friends know when you&apos;re out.
           </Text>

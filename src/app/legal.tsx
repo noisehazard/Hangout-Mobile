@@ -23,7 +23,7 @@ export default function LegalScreen() {
       </Pressable>
 
       <Text style={styles.title}>Privacy Policy</Text>
-      <P>Last updated: [DATE]. HangoutAI (&quot;we&quot;) is operated by [ENTITY/NAME], contact [CONTACT EMAIL].</P>
+      <P>Last updated: [DATE]. Hangout (&quot;we&quot;) is operated by [ENTITY/NAME], contact [CONTACT EMAIL].</P>
       <H>What we collect</H>
       <P>Account data (an anonymous id, and — if you verify — your email and chosen handle), your approximate or exact location when you use the map or post an event, the events you create or join, messages you send, and friend and block relationships.</P>
       <H>How we use it</H>
@@ -37,12 +37,12 @@ export default function LegalScreen() {
       <H>Retention &amp; deletion</H>
       <P>You can delete your account at any time from the You tab, which permanently removes your profile, events, messages, and relationships. Expired events are cleaned up automatically.</P>
       <H>Children</H>
-      <P>HangoutAI is not intended for anyone under 13 (or the minimum age in your country).</P>
+      <P>Hangout is not intended for anyone under 13 (or the minimum age in your country).</P>
       <H>Contact</H>
       <P>Questions: [CONTACT EMAIL].</P>
 
       <Text style={[styles.title, { marginTop: Spacing.xl }]}>Terms of Service</Text>
-      <P>By using HangoutAI you agree to these terms.</P>
+      <P>By using Hangout you agree to these terms.</P>
       <H>Acceptable use</H>
       <P>Be respectful. Do not harass, threaten, impersonate, spam, or post illegal or dangerous content. Do not use the app to share someone&apos;s private location without consent.</P>
       <H>Your content</H>

@@ -1,4 +1,4 @@
-# HangoutAI — Implemented Features
+# Hangout — Implemented Features
 
 A living record of what the app currently does. **Update this file whenever functionality is added, changed, or removed.**
 
@@ -6,7 +6,7 @@ _Last updated: 2026-08-16 (metrics, rate limits, repeat hangout)_
 
 ## Overview
 
-HangoutAI is an Android-first (Expo / React Native) app for broadcasting and discovering hangouts happening *now* at a location, shown on a live map, with friends and open discovery both first-class. Backend is Supabase (Postgres + PostGIS, Auth, Storage, Realtime, RLS).
+Hangout is an Android-first (Expo / React Native) app for broadcasting and discovering hangouts happening *now* at a location, shown on a live map, with friends and open discovery both first-class. Backend is Supabase (Postgres + PostGIS, Auth, Storage, Realtime, RLS).
 
 Four bottom tabs: **Discover**, **Create**, **Friends**, **You**.
 
@@ -30,7 +30,7 @@ Four bottom tabs: **Discover**, **Create**, **Friends**, **You**.
 
 - **Privacy Policy + Terms** — in-app `/legal` screen (linked from You → "Privacy & Terms"). Template text; bracketed fields (`[DATE]`, `[CONTACT EMAIL]`, `[JURISDICTION]`) must be filled/reviewed before launch. Google Play also requires the policy at a **public URL**, which is not yet hosted.
 - **Support** — You → "Help & feedback" opens a pre-addressed email with the user's handle, app version, and device attached. "Location & privacy" is still an inert row.
-- **EAS build config** — `eas.json` with `development` (dev client, for push testing), `preview` (internal APK), and `production` (Play app-bundle) profiles; `app.json` has Android package `com.hangoutai.app`. Actual builds require an Expo account (`npx eas build --profile <name> --platform android`).
+- **EAS build config** — `eas.json` with `development` (dev client, for push testing), `preview` (internal APK), and `production` (Play app-bundle) profiles; `app.json` has Android package `com.hangout.app`. Actual builds require an Expo account (`npx eas build --profile <name> --platform android`).
 
 ## Onboarding
 
@@ -53,7 +53,7 @@ Four bottom tabs: **Discover**, **Create**, **Friends**, **You**.
 - **Per-event location privacy** — host chooses **Exact** or **Approximate** (default Approximate). Approximate events show a **deterministic fuzzed point** (~±330 m) and an area circle + note to non-members; the true spot is revealed to the host, accepted friends, and anyone who has joined.
 - **Visibility** — each hangout is **Public** (on the map for everyone), **Friends only** (on the map only for the host's friends), or **Invite only** (off the map; only the host and invited friends can see or join). Enforced server-side via `can_access_event`.
 - **Event detail** — map, description, host, time, theme, openness, friends-going count, who's-going, chat, share, join, and (host) edit/delete.
-- **Share links** — a Share button on event detail sends `https://hangoutai.app/e/<id>` (plus a `?k=` token for non-public events), which deep-links into the app via the `hangoutai://` scheme. The token is a **doorknob**: two `security definer` RPCs check it once at the door, and after joining the caller is an ordinary attendee, so `can_access_event` and every RLS policy are untouched. Blocks, bans, expiry, the verified-to-join gate and location fuzzing all still apply to a link holder. The host mints a token on first share (confirmed for friends/private events) and can revoke it from the options menu, which rotates it and kills every link already sent. The `https` redirect site is not hosted yet, so links currently resolve only for people who already have the app.
+- **Share links** — a Share button on event detail sends `<share host>/e/<id>` (plus a `?k=` token for non-public events), which deep-links into the app via the `hangout://` scheme. The host comes from `EXPO_PUBLIC_SHARE_HOST` and defaults to a placeholder — no domain is registered and the landing site that performs the redirect is still to be built, so shared links do not resolve yet. The token is a **doorknob**: two `security definer` RPCs check it once at the door, and after joining the caller is an ordinary attendee, so `can_access_event` and every RLS policy are untouched. Blocks, bans, expiry, the verified-to-join gate and location fuzzing all still apply to a link holder. The host mints a token on first share (confirmed for friends/private events) and can revoke it from the options menu, which rotates it and kills every link already sent. The `https` redirect site is not hosted yet, so links currently resolve only for people who already have the app.
 - **Join** ("I'm in") — verified users; **Who's going** attendee list is shown to verified users only (everyone sees the count).
 
 ## Friends
@@ -131,7 +131,7 @@ Migrations live in `supabase/migrations/` and are applied by pasting them into t
 - `0022_rate_limits` — `check_rate_limit(action, max, window)` wired into `create_event` (10/h) and `join_event` (40/h), an end-after-start guard on create, and `duplicate_event(id, starts_at)` which re-posts your own hangout preserving its duration.
 - `0020_event_link_access` — `events.link_token` plus `enable_event_link` / `disable_event_link` (host-only) and the `security definer` pair `get_event_by_link` / `join_event_by_link`. Both are revoked from `public` and re-granted to `authenticated` — Postgres grants EXECUTE to PUBLIC by default, so revoking from `anon` alone leaves them open.
 
-**Push setup:** `google-services.json` currently declares `com.hangout.app` while `app.json` uses `com.hangoutai.app`. FCM rejects that mismatch, so the Firebase Android app has to be re-registered under the real package name before push can be delivered; `android.googleServicesFile` is deliberately left unset until then.
+**Push setup:** the Android package is `com.hangout.app`, matching the existing Firebase registration, and `app.json` points `android.googleServicesFile` at `google-services.json`. Because the package changed, the Google **Android** OAuth client has to be re-created in Google Cloud (package + debug SHA-1) or Google sign-in will fail on device; the web client id used by `linkGoogle` is unaffected.
 
 **Setup notes:** custom SMTP is required for verification emails (see the root `README.md`); set `is_admin = true` on your own profile to access the admin Reports screen.
 

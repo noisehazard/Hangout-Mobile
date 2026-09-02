@@ -1,4 +1,4 @@
-# HangoutAI
+# Hangout
 
 Broadcast that something is happening near you — or that you're up for going out — so other
 people can see it on a map and join. The first screen is an Airbnb-style map with "cloud"

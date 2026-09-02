@@ -6,7 +6,7 @@ export type PlaceResult = {
 
 type NominatimRow = { display_name: string; lat: string; lon: string };
 
-const HEADERS = { 'User-Agent': 'HangoutAI/1.0 (dev)' };
+const HEADERS = { 'User-Agent': 'Hangout/1.0 (dev)' };
 
 export function parseSearchResults(data: NominatimRow[]): PlaceResult[] {
   return data.map((d) => ({

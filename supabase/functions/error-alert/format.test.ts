@@ -14,7 +14,7 @@ const crash: ErrorRow = {
 
 describe('formatCrashMail', () => {
   it('names the tag in the subject', () => {
-    expect(formatCrashMail(crash).subject).toBe('[HangoutAI] Crash in unhandled');
+    expect(formatCrashMail(crash).subject).toBe('[Hangout] Crash in unhandled');
   });
 
   it('includes the message and device context', () => {

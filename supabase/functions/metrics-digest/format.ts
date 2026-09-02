@@ -49,7 +49,7 @@ export function formatMetricsMail(row: MetricsRow): Mail {
         : 'Nobody but you has hosted in 14 days. That is the number to move, ahead of any feature work.';
 
   return {
-    subject: `HangoutAI weekly — ${hit}/5 targets met`,
+    subject: `Hangout weekly — ${hit}/5 targets met`,
     text: [
       'Soft launch metrics, last 14 days.',
       '',
