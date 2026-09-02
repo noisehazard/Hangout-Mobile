@@ -52,27 +52,22 @@ and two strings.
 
 ## Blocks launch
 
-### 1. OTP email delivery — highest risk, unverified
+### 1. OTP email delivery — works, cross-provider check outstanding
 
-Creating *and* joining both require a verified account, so **every invitee must
-receive a code by email**. This has never been confirmed to work.
+**Confirmed working 2026-09-02.** Auth SMTP delivers sign-in codes; the
+`535 BadCredentials` that broke the Edge Functions did not affect Supabase Auth,
+which holds its own separate SMTP configuration.
 
-Specific reason for concern: Gmail rejected the same SMTP credential with
-`535 BadCredentials` when the Edge Functions used it. Supabase Auth is
-configured separately (Project Settings → Authentication → SMTP Settings) and
-may hold a different password — but nobody has checked.
+Remaining, and cheap:
 
-- [ ] Confirm Auth SMTP is configured and working
-- [ ] Send a real OTP to Gmail, Outlook, and a Moldovan provider
-- [ ] **Check spam folders** — mail relayed via a personal Gmail often lands there
-- [ ] Raise the Auth hourly email rate limit before a launch evening
-
-If it is broken: a fresh Gmail App Password is the cheapest fix. Resend does
-**not** work here — without a verified domain it only delivers to your own
-address, which is useless for invitees.
-
-The supply plan is explicit that discovering this *after* the 15 personal asks
-is the one mistake that cannot be undone.
+- [ ] Send a code to **Outlook** and to a **Moldovan provider**. Delivery to the
+      sender's own Gmail does not prove either — those are the providers the
+      supply plan flags as the weak point, and a personal-Gmail relay is exactly
+      what they filter.
+- [ ] **Check spam folders**, not just the inbox. Landing in spam looks like
+      success from the sending side and like silence to the invitee.
+- [ ] Raise the Auth hourly email rate limit before a launch evening where 15
+      people sign up at once. The default is low.
 
 ### 2. Legal placeholders
 
