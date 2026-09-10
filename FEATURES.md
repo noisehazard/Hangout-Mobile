@@ -75,7 +75,9 @@ Four bottom tabs: **Discover**, **Create**, **Friends**, **You**.
   re-registers silently only when permission is already granted; You → **Notifications**
   is where you actually turn them on, after a screen explaining what you get. If
   notifications were hard-blocked, that screen offers **Open settings** instead. In Expo Go
-  or on an emulator it says so rather than failing silently.
+  or on an emulator it says so rather than failing silently. Same for an iOS build signed
+  with a free Apple ID, which has no `aps-environment` entitlement and so can never be
+  issued an APNs token — see `docs/ios-free-sideload.md`.
 - **Tap to open** — each notification carries a `data.url`, and tapping one opens that
   screen (friends, a profile, a hangout), including from a cold start. The path is checked
   against an allowlist of in-app routes first, so a payload can't push the app somewhere
@@ -102,7 +104,13 @@ Four bottom tabs: **Discover**, **Create**, **Friends**, **You**.
 - **Polish pass** (WS7) — error feedback and failure states ✅ (toasts, server-authored
   messages, Discover empty/error states). Remaining: a visual pass after real-device testing.
 - **Distribution** (WS8) — code side done (account deletion, legal screen, EAS profiles, package id). Remaining is running the EAS builds and the Google Play internal-testing setup (needs Expo + Play accounts).
-- Deferred: discovery filters, external event seeding/scrapers, phone/SMS verification, iOS.
+- **iOS testing** — no paid Apple Developer account, so every documented on-device route
+  (EAS internal distribution, TestFlight, `eas go`) is closed, and App Store Expo Go stops
+  at SDK 54. `codemagic.yaml` builds an unsigned dev client on Codemagic's free macOS tier
+  for sideloading with a free Apple ID; `docs/ios-free-sideload.md` is the runbook. Push and
+  Google sign-in do not work under that signing — email OTP does.
+- Deferred: discovery filters, external event seeding/scrapers, phone/SMS verification,
+  an iOS App Store release.
 
 ## Backend (Supabase)
 

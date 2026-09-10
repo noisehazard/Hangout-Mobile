@@ -135,7 +135,11 @@ Needs `npx expo run:android` on a real phone.
 - **`react-native-maps` swap** — the cheap 10% of that rewrite which recovers
   most of the map-performance argument. The original blocker (Google Maps key
   failing under Expo Go) is gone now that builds are local dev builds.
-- Discovery filters, external event seeding, phone/SMS verification, iOS.
+- Discovery filters, external event seeding, phone/SMS verification, an iOS App
+  Store release. iOS *testing* is now possible without paying Apple — an unsigned
+  dev client from `codemagic.yaml`, sideloaded with a free Apple ID; see
+  `docs/ios-free-sideload.md`. Push and Google sign-in do not work that way, so
+  both still have to be verified on Android.
 
 ---
 
