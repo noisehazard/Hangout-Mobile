@@ -1,5 +1,6 @@
 import {
   hrefFromNotificationData,
+  isMissingPushEntitlement,
   pushUnavailableReason,
   resolveProjectId,
 } from '@/lib/push';
@@ -15,6 +16,30 @@ describe('pushUnavailableReason', () => {
 
   it('allows a real device in a dev build', () => {
     expect(pushUnavailableReason({ isDevice: true, isExpoGo: false })).toBeNull();
+  });
+});
+
+describe('isMissingPushEntitlement', () => {
+  it('recognises the error iOS throws when the binary has no aps-environment', () => {
+    expect(
+      isMissingPushEntitlement(
+        new Error(
+          "no valid 'aps-environment' entitlement string found for application",
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it('recognises the wrapped Expo registration failure', () => {
+    const error = Object.assign(new Error('Failed to register for remote notifications'), {
+      code: 'ERR_NOTIFICATIONS_REGISTRATION_FAILED',
+    });
+    expect(isMissingPushEntitlement(error)).toBe(true);
+  });
+
+  it('leaves unrelated failures alone so real bugs still surface', () => {
+    expect(isMissingPushEntitlement(new Error('Network request failed'))).toBe(false);
+    expect(isMissingPushEntitlement(undefined)).toBe(false);
   });
 });
 

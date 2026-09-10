@@ -5,6 +5,7 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 
 import {
+  isMissingPushEntitlement,
   pushUnavailableReason,
   resolveProjectId,
   type PushUnavailableReason,
@@ -111,7 +112,17 @@ export async function registerForPushNotifications(
   const projectId = resolveProjectId(Constants);
   if (!projectId) return { status: 'unavailable', reason: 'no-project-id' };
 
-  const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
+  let token: string;
+  try {
+    ({ data: token } = await Notifications.getExpoPushTokenAsync({ projectId }));
+  } catch (error) {
+    // A free-Apple-ID sideload has no push entitlement; degrade instead of
+    // taking the Notifications screen down with it.
+    if (isMissingPushEntitlement(error)) {
+      return { status: 'unavailable', reason: 'no-entitlement' };
+    }
+    throw error;
+  }
   const { error } = await supabase.rpc('register_push_token', {
     p_token: token,
     p_platform: Platform.OS,

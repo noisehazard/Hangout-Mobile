@@ -8,7 +8,8 @@
     "scheme": "hangout",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.hangout.app"
     },
     "android": {
       "package": "com.hangout.app",
@@ -46,7 +47,18 @@
         }
       ],
       "@react-native-community/datetimepicker",
-      "@react-native-google-signin/google-signin",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.000000000000-placeholderplaceholder"
+        }
+      ],
+      [
+        "expo-dev-client",
+        {
+          "launchMode": "launcher"
+        }
+      ],
       [
         "expo-notifications",
         {
