@@ -8,14 +8,17 @@
 export const SUPPORT_EMAIL = 'dax0068@gmail.com';
 
 /** Date the legal copy was last revised, shown in the privacy policy. */
-export const LEGAL_LAST_UPDATED = '2 September 2026';
+export const LEGAL_LAST_UPDATED = '27 September 2026';
 
 /**
  * Who operates the service, and the governing law for the terms.
  *
- * TODO(before first Play release): Google rejects apps whose policy still shows
- * placeholders, and these two are decisions only you can make — whether you
- * publish as yourself or a registered company, and under which country's law.
+ * Hangout is published by an individual, not a company, so OPERATOR is a legal
+ * name and OPERATOR_ADDRESS is the postal address that identifies the data
+ * controller. Google Play shows the same name and address publicly on the
+ * store listing, and the two must match — if the listing address changes,
+ * change it here too.
  */
-export const OPERATOR = '[ENTITY/NAME]';
-export const JURISDICTION = '[JURISDICTION]';
+export const OPERATOR = 'Brițchi Daniel';
+export const OPERATOR_ADDRESS = 'MD-2004 Chișinău, Moldova';
+export const JURISDICTION = 'Moldova';

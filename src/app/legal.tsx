@@ -8,6 +8,7 @@ import {
   JURISDICTION,
   LEGAL_LAST_UPDATED,
   OPERATOR,
+  OPERATOR_ADDRESS,
   SUPPORT_EMAIL,
 } from '@/lib/contact';
 import { Colors, Spacing } from '@/theme';
@@ -31,7 +32,8 @@ export default function LegalScreen() {
       <Text style={styles.title}>Privacy Policy</Text>
       <P>
         Last updated: {LEGAL_LAST_UPDATED}. Hangout (&quot;we&quot;) is operated by {OPERATOR},
-        contact {SUPPORT_EMAIL}.
+        {OPERATOR_ADDRESS}, who is the data controller for the personal data described below.
+        Contact {SUPPORT_EMAIL}.
       </P>
       <H>What we collect</H>
       <P>Account data (an anonymous id, and — if you verify — your email and chosen handle), your approximate or exact location when you use the map or post an event, the events you create or join, messages you send, and friend and block relationships.</P>
